@@ -1,0 +1,10 @@
+fastapi==0.115.6
+uvicorn==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+httpx==0.28.1
+python-multipart==0.0.20
+tavily-python==0.5.0
+langchain==0.3.9
+chromadb==0.5.23
+pypdf==5.1.0
