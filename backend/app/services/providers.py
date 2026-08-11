@@ -118,6 +118,40 @@ def call_openrouter(messages: list[ChatMessage], model: str) -> ProviderResult:
     return ProviderResult(answer=answer or "I could not generate a response.", provider="openrouter")
 
 
+def call_cerebras(messages: list[ChatMessage], model: str) -> ProviderResult:
+    if not settings.cerebras_api_key:
+        raise RuntimeError("Missing CEREBRAS_API_KEY")
+    url = "https://api.cerebras.ai/v1/chat/completions"
+    payload = {"model": model, "messages": [{"role": m.role, "content": m.content} for m in messages], "temperature": 0.3}
+    headers = {"Authorization": f"Bearer {settings.cerebras_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=20.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="cerebras")
+
+
+def call_cohere(messages: list[ChatMessage], model: str) -> ProviderResult:
+    if not settings.cohere_api_key:
+        raise RuntimeError("Missing COHERE_API_KEY")
+    url = "https://api.cohere.ai/v1/chat"
+    # Cohere has a slightly different format, but we can use their newer chat endpoint
+    payload = {
+        "model": model,
+        "message": _last_user_message(messages),
+        "chat_history": [{"role": m.role.upper() if m.role != "assistant" else "CHATBOT", "message": m.content} for m in messages[:-1]],
+        "temperature": 0.3
+    }
+    headers = {"Authorization": f"Bearer {settings.cohere_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=40.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("text", "").strip()
+    return ProviderResult(answer=answer, provider="cohere")
+
+
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:
     if settings.openai_api_key:
         try:

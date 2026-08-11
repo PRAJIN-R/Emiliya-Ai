@@ -194,6 +194,8 @@ def search_snapshot() -> dict[str, bool]:
     return {
         "tavily": bool(settings.tavily_api_key),
         "newsapi": bool(settings.news_api_key),
+        "world_news": bool(settings.world_news_api_key),
+        "newsdata": bool(settings.newsdata_api_key),
         "mediastack": bool(settings.mediastack_api_key),
         "google_cse": bool(settings.google_search_api_key and settings.google_search_engine_id),
         "firecrawl": bool(settings.firecrawl_api_key),
@@ -276,20 +278,21 @@ def _search_task_order(query: str, limit: int):
             ("google_cse", lambda: _google_search(query, limit)),
             ("tavily", lambda: _tavily_search(query, limit)),
             ("newsapi", lambda: _news_search(query, limit)),
-            ("mediastack", lambda: _mediastack_search(query, limit)),
+            ("newsdata", lambda: _newsdata_search(query, limit)),
         ]
     if is_news_query(query):
         return [
+            ("newsdata", lambda: _newsdata_search(query, limit)),
+            ("world_news", lambda: _world_news_search(query, limit)),
             ("newsapi", lambda: _news_search(query, limit)),
-            ("mediastack", lambda: _mediastack_search(query, limit)),
-            ("google_cse", lambda: _google_search(query, limit)),
             ("tavily", lambda: _tavily_search(query, limit)),
+            ("google_cse", lambda: _google_search(query, limit)),
         ]
     return [
         ("google_cse", lambda: _google_search(query, limit)),
         ("tavily", lambda: _tavily_search(query, limit)),
+        ("newsdata", lambda: _newsdata_search(query, limit)),
         ("newsapi", lambda: _news_search(query, limit)),
-        ("mediastack", lambda: _mediastack_search(query, limit)),
     ]
 
 
@@ -808,6 +811,56 @@ def _scrape_do_search(query: str, limit: int) -> list[dict[str, Any]]:
                 "source": "scrape_do",
             }
             for item in organic[:limit]
+        ]
+    except Exception:
+        return []
+
+
+def _newsdata_search(query: str, limit: int) -> list[dict[str, Any]]:
+    if not settings.newsdata_api_key:
+        return []
+    try:
+        url = "https://newsdata.io/api/1/news"
+        params = {"apikey": settings.newsdata_api_key, "q": query, "language": "en"}
+        with httpx.Client(timeout=15.0) as client:
+            res = client.get(url, params=params)
+            res.raise_for_status()
+            data = res.json()
+        results = data.get("results", []) or []
+        return [
+            {
+                "title": r.get("title", ""),
+                "url": r.get("link", ""),
+                "snippet": r.get("description", "") or r.get("content", ""),
+                "source": r.get("source_id", "newsdata"),
+                "published_at": r.get("pubDate", ""),
+            }
+            for r in results[:limit]
+        ]
+    except Exception:
+        return []
+
+
+def _world_news_search(query: str, limit: int) -> list[dict[str, Any]]:
+    if not settings.world_news_api_key:
+        return []
+    try:
+        url = "https://api.worldnewsapi.com/search-news"
+        params = {"api-key": settings.world_news_api_key, "text": query, "number": min(limit, 10), "language": "en"}
+        with httpx.Client(timeout=15.0) as client:
+            res = client.get(url, params=params)
+            res.raise_for_status()
+            data = res.json()
+        news = data.get("news", []) or []
+        return [
+            {
+                "title": n.get("title", ""),
+                "url": n.get("url", ""),
+                "snippet": n.get("text", ""),
+                "source": "worldnews",
+                "published_at": n.get("publish_date", ""),
+            }
+            for n in news[:limit]
         ]
     except Exception:
         return []

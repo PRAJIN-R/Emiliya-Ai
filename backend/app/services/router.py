@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from app.core.config import settings
 from app.models.schemas import ChatMessage
-from app.services.providers import call_gemini, call_groq, call_mistral, call_openrouter, call_xai, local_fallback_answer
+from app.services.providers import call_cerebras, call_cohere, call_gemini, call_groq, call_mistral, call_openrouter, call_xai, local_fallback_answer
 from app.services.search import build_live_answer, is_news_query, is_weather_query, search_snapshot, search_web, web_results_to_context
 
 
@@ -61,12 +61,16 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
 
     if route == "coding":
         candidates = []
+        if settings.cerebras_api_key:
+            candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
             candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
         if settings.xai_api_key:
             candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
         if settings.gemini_api_key:
             candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
+        if settings.cohere_api_key:
+            candidates.append(("cohere", lambda: call_cohere(messages, settings.cohere_model)))
         if settings.mistral_api_key:
             candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
         if settings.openrouter_api_key:
@@ -90,6 +94,8 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
                 ),
             ]
             candidates = []
+            if settings.cerebras_api_key:
+                candidates.append(("cerebras", lambda: call_cerebras(summary_messages, settings.cerebras_model)))
             if settings.groq_api_key:
                 candidates.append(("groq", lambda: call_groq(summary_messages, settings.groq_model)))
             if settings.gemini_api_key:
@@ -131,15 +137,19 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
                 }
 
     candidates = []
-    # Mistral and Gemini usually have reliable keys provided by user
-    if settings.mistral_api_key:
-        candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
-    if settings.gemini_api_key:
-        candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
+    # Speed priority
+    if settings.cerebras_api_key:
+        candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
     if settings.groq_api_key:
         candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
+    if settings.gemini_api_key:
+        candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
+    if settings.mistral_api_key:
+        candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
     if settings.xai_api_key:
         candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
+    if settings.cohere_api_key:
+        candidates.append(("cohere", lambda: call_cohere(messages, settings.cohere_model)))
     if settings.openrouter_api_key:
         candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
 
@@ -148,6 +158,8 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
 
 def fallback_router(messages: list[ChatMessage]) -> dict:
     candidates = []
+    if settings.cerebras_api_key:
+        candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
     if settings.groq_api_key:
         candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
     if settings.xai_api_key:
@@ -156,6 +168,8 @@ def fallback_router(messages: list[ChatMessage]) -> dict:
         candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
     if settings.mistral_api_key:
         candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
+    if settings.cohere_api_key:
+        candidates.append(("cohere", lambda: call_cohere(messages, settings.cohere_model)))
     if settings.openrouter_api_key:
         candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
     return {"route": "fallback", **_run_candidates(candidates, messages)}
@@ -169,10 +183,14 @@ def provider_snapshot() -> dict:
             "xai": bool(settings.xai_api_key),
             "mistral": bool(settings.mistral_api_key),
             "groq": bool(settings.groq_api_key),
+            "cerebras": bool(settings.cerebras_api_key),
+            "cohere": bool(settings.cohere_api_key),
             "openrouter": bool(settings.openrouter_api_key),
             "tavily": bool(settings.tavily_api_key),
             "newsapi": bool(settings.news_api_key),
-            "mediastack": bool(settings.mediastack_api_key),
+            "world_news": bool(settings.world_news_api_key),
+            "newsdata": bool(settings.newsdata_api_key),
+            "deepgram": bool(settings.deepgram_api_key),
             "google_cse": bool(settings.google_search_api_key and settings.google_search_engine_id),
             "firecrawl": bool(settings.firecrawl_api_key),
             "scrape_do": bool(settings.scrape_do_api_key),
@@ -184,10 +202,12 @@ def provider_snapshot() -> dict:
             "langchain": bool(settings.langchain_api_key),
         },
         "provider_priority": [
-            "Groq",
-            "xAI / Grok",
+            "Cerebras (Fast)",
+            "Groq (Fast)",
             "Gemini",
             "Mistral",
+            "xAI / Grok",
+            "Cohere",
             "OpenRouter",
             "Local fallback",
         ],

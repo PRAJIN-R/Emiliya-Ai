@@ -526,6 +526,97 @@ function RecentChatItem({
   );
 }
 
+function IconPersonalization({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+      <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconBug({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M12 6V3M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zm-6 6H3m15 0h3m-1.5-6.5l2-2m-15 0l-2 2m15 11l2 2m-15 0l-2-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconKeyboard({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h.01M11 14h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UpgradeModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-[fadeIn_.2s_ease-out]">
+      <div className="relative w-full max-w-[900px] rounded-[32px] bg-[#171717] border border-white/10 p-8 text-white shadow-2xl overflow-y-auto max-h-[95vh] hide-scrollbar">
+        <button onClick={onClose} className="absolute right-6 top-6 p-2 text-white/50 hover:text-white transition-colors">
+          <IconX className="w-6 h-6" />
+        </button>
+
+        <h2 className="text-center text-[32px] font-bold mb-2">Upgrade your plan</h2>
+        <p className="text-center text-white/50 mb-10">Find your best fit</p>
+
+        <div className="flex justify-center mb-10">
+          <div className="flex bg-[#2f2f2f] p-1 rounded-2xl">
+            <button className="px-8 py-2 rounded-xl bg-[#3d3d3d] text-sm font-bold shadow-lg">Personal</button>
+            <button className="px-8 py-2 rounded-xl text-sm font-bold text-white/50 hover:text-white transition-colors">Business</button>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="rounded-[28px] bg-[#212121] p-8 border border-white/5 flex flex-col h-full">
+            <h3 className="text-[20px] font-bold mb-2">Free</h3>
+            <p className="text-[24px] font-medium mb-6">Try ChatGPT</p>
+            <p className="text-white/50 mb-8">For quick, everyday help</p>
+
+            <div className="text-[32px] font-bold mb-8">₹0 <span className="text-[16px] text-white/30 font-normal">/ month</span></div>
+
+            <button className="w-full h-14 rounded-full border border-white/10 text-white/30 font-bold mb-10 cursor-not-allowed">Your current plan</button>
+
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconSpark className="text-white/40" /> Core model</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconMic className="text-white/40" /> Limited messages and uploads</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconImageTool className="text-white/40" /> Limited image creation</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconUserCircle className="text-white/40" /> Limited memory</li>
+            </ul>
+          </div>
+
+          <div className="rounded-[28px] bg-[#212121] p-8 border border-blue-500/20 flex flex-col h-full relative">
+            <div className="absolute top-8 right-8 bg-blue-500/10 text-blue-400 text-[11px] font-bold px-2 py-0.5 rounded-full tracking-widest uppercase">Recommended</div>
+            <h3 className="text-[20px] font-bold mb-2">ChatGPT Plus</h3>
+            <p className="text-[24px] font-medium mb-6">Your AI assistant</p>
+            <p className="text-white/50 mb-8">Unlock advanced intelligence that adapts to your preferences the more you use it.</p>
+
+            <div className="text-[32px] font-bold mb-8">₹1,999 <span className="text-[16px] text-white/30 font-normal">/ month</span></div>
+
+            <button className="w-full h-14 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold mb-10 transition-all flex items-center justify-center gap-2">
+              <IconPlus className="w-5 h-5" /> Upgrade to Plus
+            </button>
+
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconSpark className="text-blue-400" /> Advanced models</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconBulb className="text-blue-400" /> Advanced image creation with Thinking</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconRecents className="text-blue-400" /> Expanded memory across chats</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconApps className="text-blue-400" /> Work agent for multi-step tasks</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconEdit className="text-blue-400" /> Codex agent for coding</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconSearch className="text-blue-400" /> Expanded deep research</li>
+              <li className="flex items-center gap-3 text-[14px] text-white/80"><IconBrand className="text-blue-400" /> Projects and custom GPTs</li>
+            </ul>
+          </div>
+        </div>
+
+        <p className="text-center text-[12px] text-white/20 mt-10">Have an existing plan? <span className="underline cursor-pointer">See billing help</span></p>
+      </div>
+    </div>
+  );
+}
+
 function Sidebar({
   compact = false,
   sidebarCollapsed = false,
@@ -555,6 +646,7 @@ function Sidebar({
   pinnedChatIds = [],
   onTogglePin,
   onArchiveRecent,
+  onUpgradeClick,
 }: {
   compact?: boolean;
   sidebarCollapsed?: boolean;
@@ -584,9 +676,30 @@ function Sidebar({
   pinnedChatIds?: string[];
   onTogglePin?: (id: string) => void;
   onArchiveRecent?: (id: string) => void;
+  onUpgradeClick?: () => void;
 }) {
   const [openOptionsId, setOpenOptionsId] = useState<string | null>(null);
+  const [helpSubmenuOpen, setHelpSubmenuOpen] = useState(false);
+  const [accountSubmenuOpen, setAccountSubmenuOpen] = useState(false);
   const initial = (userName?.[0] || userEmail?.[0] || "U").toUpperCase();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        if (profileMenuOpen) onToggleProfileMenu?.();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileMenuOpen, onToggleProfileMenu]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) {
+      setHelpSubmenuOpen(false);
+      setAccountSubmenuOpen(false);
+    }
+  }, [profileMenuOpen]);
 
   return (
     <div className="flex h-full flex-col bg-black text-[#ececec]">
@@ -698,12 +811,13 @@ function Sidebar({
       <div className={`px-3 py-4 space-y-1 border-t border-white/10 ${compact ? "flex flex-col items-center" : ""}`}>
         {!compact &&
           [
-            { label: "See plans and pricing", icon: <IconApps /> },
-            { label: "Settings", icon: <IconSettings /> },
-            { label: "Help", icon: <IconHelp /> },
+            { label: "See plans and pricing", icon: <IconApps />, onClick: onUpgradeClick },
+            { label: "Settings", icon: <IconSettings />, onClick: onOpenEditProfile },
+            { label: "Help", icon: <IconHelp />, onClick: () => setHelpSubmenuOpen(!helpSubmenuOpen) },
           ].map((item) => (
             <button
               key={item.label}
+              onClick={item.onClick}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] text-[#ececec]"
             >
               <span className="shrink-0">{item.icon}</span>
@@ -727,14 +841,119 @@ function Sidebar({
         )}
 
         {isAuthenticated && !compact && (
-          <div className="relative mt-2">
+          <div className="relative mt-2" ref={menuRef}>
             {profileMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 w-full rounded-xl bg-[#202123] border border-white/10 p-2 shadow-2xl animate-[fadeIn_.1s_ease-out]">
-                <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] hover:bg-white/5">
-                  <IconSettings /> Settings
+              <div className="absolute bottom-full left-0 mb-2 w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl animate-[slidePop_.15s_ease-out] z-[120]">
+                {/* Account Header with Submenu trigger */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setAccountSubmenuOpen(!accountSubmenuOpen); setHelpSubmenuOpen(false); }}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f8a600] text-[11px] font-bold text-white">
+                        {initial}
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="truncate text-[14px] font-medium">{userName || userEmail?.split("@")[0] || "User"}</p>
+                        <p className="text-[11px] text-white/30 uppercase font-bold tracking-tight">Free</p>
+                      </div>
+                    </div>
+                    <IconChevronDown className={`shrink-0 text-white/20 transition-transform ${accountSubmenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {accountSubmenuOpen && (
+                    <div className="absolute left-[calc(100%+8px)] bottom-0 w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl animate-[slidePop_.1s_ease-out]">
+                      <div className="px-3 py-2 border-b border-white/5 mb-1">
+                        <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest">{userEmail}</p>
+                      </div>
+                      <button className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f8a600] text-[11px] font-bold text-white">{initial}</div>
+                          <span className="text-[14px] font-medium">{userName}</span>
+                        </div>
+                        <IconCheck className="text-white/50 w-4 h-4" />
+                      </button>
+                      <button onClick={onAddAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors mt-1">
+                        <IconPlus className="text-white/40 w-4 h-4" />
+                        <span className="text-[14px] font-medium">Add account</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="my-1 border-t border-white/5" />
+
+                <button onClick={onUpgradeClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                  <IconSpark className="text-white/40" />
+                  <span className="text-[14.5px] font-medium">Upgrade plan</span>
                 </button>
-                <button onClick={onSignOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] text-red-400 hover:bg-white/5">
-                  <IconX /> Log out
+                <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                  <IconPersonalization className="text-white/40" />
+                  <span className="text-[14.5px] font-medium">Personalization</span>
+                </button>
+                <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                  <IconUserCircle className="text-white/40" />
+                  <span className="text-[14.5px] font-medium">Profile</span>
+                </button>
+                <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                  <IconSettings className="text-white/40" />
+                  <span className="text-[14.5px] font-medium">Settings</span>
+                </button>
+
+                <div className="my-1 border-t border-white/5" />
+
+                {/* Help Submenu Trigger */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setHelpSubmenuOpen(!helpSubmenuOpen); setAccountSubmenuOpen(false); }}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <IconHelp className="text-white/40" />
+                      <span className="text-[14.5px] font-medium">Help</span>
+                    </div>
+                    <IconChevronDown className={`shrink-0 text-white/20 transition-transform -rotate-90 group-hover:text-white/40`} />
+                  </button>
+
+                  {helpSubmenuOpen && (
+                    <div className="absolute left-[calc(100%+8px)] bottom-0 w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl animate-[slidePop_.1s_ease-out]">
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconHelp className="text-white/40" />
+                        <span className="text-[14px] font-medium">Help center</span>
+                      </button>
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconReleaseNotes className="text-white/40" />
+                        <span className="text-[14px] font-medium">Release notes</span>
+                      </button>
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconDownload className="text-white/40" />
+                        <span className="text-[14px] font-medium">Download apps</span>
+                      </button>
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconKeyboard className="text-white/40" />
+                        <span className="text-[14px] font-medium">Keyboard shortcuts</span>
+                      </button>
+                      <div className="my-1 border-t border-white/5" />
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconBook className="text-white/40" />
+                        <span className="text-[14px] font-medium">Terms of Service</span>
+                      </button>
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconHelp className="text-white/40" />
+                        <span className="text-[14px] font-medium">Privacy Policy</span>
+                      </button>
+                      <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                        <IconBug className="text-white/40" />
+                        <span className="text-[14px] font-medium">Report a bug</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={onSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] text-white hover:bg-white/5 transition-colors group">
+                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white/40 group-hover:text-white/60"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                   <span className="font-medium">Log out</span>
                 </button>
               </div>
             )}
@@ -745,7 +964,11 @@ function Sidebar({
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f8a600] text-[13px] font-bold text-white">
                 {initial}
               </div>
-              <span className="truncate text-[14px] font-medium">{userName || userEmail?.split("@")[0] || "User"}</span>
+              <div className="flex-1 text-left min-w-0">
+                <p className="truncate text-[14px] font-medium">{userName || userEmail?.split("@")[0] || "User"}</p>
+                <p className="text-[11px] text-white/30 uppercase font-bold tracking-tight">Free</p>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); onUpgradeClick?.(); }} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-full text-[11px] font-bold transition-colors">Upgrade</button>
             </button>
           </div>
         )}
@@ -754,7 +977,7 @@ function Sidebar({
           <div className="relative mt-auto flex flex-col items-center mb-2">
             {compactGuestMenuOpen && (
               <div className="absolute bottom-0 left-[58px] w-[260px] rounded-3xl bg-[#232323] border border-white/10 p-2.5 shadow-2xl animate-[slidePop_.15s_ease-out] z-[100]">
-                <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
+                <button onClick={onUpgradeClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
                   <IconSpark className="text-white/40" /> See plans and pricing
                 </button>
                 <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
@@ -833,7 +1056,8 @@ function InputBar({
   onGenerateImage,
   onReadAloud,
   onStopAudio,
-  isSpeaking
+  isSpeaking,
+  isTemporary
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -860,6 +1084,7 @@ function InputBar({
   onReadAloud?: () => void;
   onStopAudio?: () => void;
   isSpeaking?: boolean;
+  isTemporary?: boolean;
 }) {
   return (
     <div className="relative w-full">
@@ -1033,7 +1258,7 @@ function InputBar({
                      sendMessage();
                    }
                 }}
-                placeholder={webSearchOn ? "Search the web" : "Ask anything"}
+                placeholder={isTemporary ? "Temporary chat" : webSearchOn ? "Search the web" : "Ask anything"}
                 className="flex-1 bg-transparent py-2 text-[15px] text-[#ececec] outline-none placeholder:text-white/30"
               />
               <div className="flex items-center gap-1.5 shrink-0 pr-1">
@@ -1156,7 +1381,7 @@ export default function Page() {
   const [editingText, setEditingText] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [viewportPreset, setViewportPreset] = useState<"base" | "r1366" | "r1920">("base");
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [providerHealth, setProviderHealth] = useState<ProviderHealth | null>(null);
   const [providerHealthLoading, setProviderHealthLoading] = useState(false);
@@ -1180,11 +1405,7 @@ export default function Page() {
     (authUser?.user_metadata?.full_name as string | undefined) ||
     authUser?.email?.split("@")[0] ||
     "User";
-  const heroTopClass = viewportPreset === "r1920" ? "pt-[6vh]" : viewportPreset === "r1366" ? "pt-[5vh]" : "pt-[6vh]";
-  const heroGapClass = "mb-8 md:mb-10";
-  const inputHeightClass = viewportPreset === "r1920" ? "h-[64px]" : viewportPreset === "r1366" ? "h-[64px]" : "h-[64px]";
-  const searchHeightClass = viewportPreset === "r1920" ? "h-[64px]" : viewportPreset === "r1366" ? "h-[64px]" : "h-[64px]";
-  const imageHeightClass = viewportPreset === "r1920" ? "h-[64px]" : viewportPreset === "r1366" ? "h-[64px]" : "h-[64px]";
+  const initial = (displayName?.[0] || authUser?.email?.[0] || "U").toUpperCase();
 
   const setComposerInput = (value: string) => {
     setInput(value);
@@ -1202,7 +1423,7 @@ export default function Page() {
   };
 
   const saveRecentIfAuthed = (title: string) => {
-    if (!session || !authUser?.id) return;
+    if (!session || !authUser?.id || temporaryChat) return;
     const key = `emilia_recent_chats_${authUser.id}`;
     const next = [title, ...recentTitles.filter((t) => t !== title)].slice(0, 20);
     setRecentTitles(next);
@@ -1253,7 +1474,7 @@ export default function Page() {
   };
 
   const upsertThread = (title: string, nextMessages: UiMessage[]) => {
-    if (!session || !authUser?.id) return;
+    if (!session || !authUser?.id || temporaryChat) return;
     const now = Date.now();
     setThreads((prev) => {
       let next = [...prev];
@@ -1667,6 +1888,12 @@ export default function Page() {
             return;
           }
         }
+      } else {
+        // Clear state if not authenticated
+        setThreads([]);
+        setPinnedChatIds([]);
+        setRecentTitles([]);
+        setHasRecents(false);
       }
       const recentRaw = localStorage.getItem("emilia_recent_chats");
       setHasRecents(!!recentRaw);
@@ -1836,23 +2063,6 @@ export default function Page() {
     setPasswordMode("login");
     setAuthView("entry");
   };
-
-  useEffect(() => {
-    const applyPreset = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      if (w >= 1880 && h >= 1000) {
-        setViewportPreset("r1920");
-      } else if (w >= 1320 && w <= 1500 && h >= 720 && h <= 860) {
-        setViewportPreset("r1366");
-      } else {
-        setViewportPreset("base");
-      }
-    };
-    applyPreset();
-    window.addEventListener("resize", applyPreset);
-    return () => window.removeEventListener("resize", applyPreset);
-  }, []);
 
   useEffect(() => {
     setEditDisplayName(displayName);
@@ -2057,14 +2267,17 @@ export default function Page() {
     setAuthBusy(true);
     setAuthError(null);
     setAuthNotice(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setAuthError(error.message);
-    } else {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
       setAuthNotice("Logged in successfully.");
       void notifyAuthEmailEvent("post-login", email);
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Login failed. Check your credentials.");
+    } finally {
+      setAuthBusy(false);
     }
-    setAuthBusy(false);
   };
 
   const signUpWithPassword = async () => {
@@ -2082,24 +2295,29 @@ export default function Page() {
     }
     setAuthBusy(true);
     setAuthError(null);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: getAuthRedirectUrl() },
-    });
-    if (error) {
-      setAuthError(error.message);
-    } else {
-      setAuthNotice("Account created. Check your email.");
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: getAuthRedirectUrl() },
+      });
+      if (error) throw error;
+
+      setAuthNotice("Account created! If you don't see a details screen, check your email to confirm your account.");
       void notifyAuthEmailEvent("post-signup", email);
+
       if (data.user) {
         setAuthUser(data.user);
+        // If email confirmation is off, this will show immediately
         setDetailsName((data.user.user_metadata?.full_name as string | undefined) || "");
         setDetailsAge((data.user.user_metadata?.age as string | undefined) || "");
+        setAuthView("details");
       }
-      setAuthView("details");
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : "Sign up failed.");
+    } finally {
+      setAuthBusy(false);
     }
-    setAuthBusy(false);
   };
 
   const signOut = async () => {
@@ -2314,11 +2532,12 @@ export default function Page() {
           pinnedChatIds={pinnedChatIds}
           onTogglePin={onTogglePin}
           onArchiveRecent={onArchiveRecent}
+          onUpgradeClick={() => setUpgradeModalOpen(true)}
         />
       </aside>
 
       <aside className="hidden h-screen w-[92px] border-r border-neutral-800 bg-black md:flex md:flex-col lg:hidden">
-        <Sidebar compact sidebarCollapsed hasRecents={hasRecents} compactGuestMenuOpen={compactGuestMenuOpen} onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)} onOpenEditProfile={() => setEditProfileOpen(true)} accountSwitchOpen={accountSwitchOpen} onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)} onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} />
+        <Sidebar compact sidebarCollapsed hasRecents={hasRecents} compactGuestMenuOpen={compactGuestMenuOpen} onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)} onOpenEditProfile={() => setEditProfileOpen(true)} accountSwitchOpen={accountSwitchOpen} onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)} onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} onUpgradeClick={() => setUpgradeModalOpen(true)} />
       </aside>
 
       <section className="app-main relative min-w-0 flex-1 flex flex-col bg-[#0c0d10] transition-all duration-200 h-screen overflow-hidden">
@@ -2336,10 +2555,11 @@ export default function Page() {
             {session ? (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setDebugPanelOpen(true)}
-                  className="rounded-lg px-3 py-1.5 text-[14px] font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors"
+                  onClick={() => setUpgradeModalOpen(true)}
+                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-[13px] font-bold text-[#ececec] transition hover:bg-white/10"
                 >
-                  Debug
+                  <IconSpark className="w-4 h-4 text-blue-400" />
+                  <span>Upgrade</span>
                 </button>
                 <div className="relative group">
                   <button
@@ -2348,14 +2568,23 @@ export default function Page() {
                   >
                     <IconTempChat />
                   </button>
+                  <div className="absolute top-full right-0 mt-2 hidden group-hover:block z-50 pointer-events-none">
+                    <div className="bg-[#171717] border border-white/10 text-white text-[12px] font-medium px-3 py-1.5 rounded-lg shadow-2xl whitespace-nowrap">
+                      {temporaryChat ? "Turn off temporary chat" : "Temporary chat"}
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={() => void exportConversation()}
                   disabled={!messages.length}
-                  className="rounded-lg px-3 py-1.5 text-[14px] font-medium text-white/60 hover:bg-white/5 transition-colors disabled:opacity-30"
+                  className="rounded-lg px-3 py-1.5 text-[14px] font-medium text-white/40 hover:bg-white/5 hover:text-white transition-colors disabled:opacity-10"
                 >
                   Export
                 </button>
+
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f8a600] text-[12px] font-bold text-white ml-1">
+                  {initial}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
@@ -2399,12 +2628,21 @@ export default function Page() {
                       onReadAloud={handleReadAloud}
                       onStopAudio={handleStopAudio}
                       isSpeaking={isSpeaking}
+                      isTemporary={temporaryChat}
                     />
                   </div>
                   {temporaryChat && (
-                    <p className="mt-8 text-center text-[16px] text-[#9a9a9a]">
-                      This chat won&apos;t appear in your chat history, and won&apos;t be used to train our models.
-                    </p>
+                    <div className="mt-8 flex flex-col items-center">
+                      <p className="text-center text-[16px] text-[#9a9a9a]">
+                        This chat won&apos;t appear in history or be used to train our models.
+                      </p>
+                      <p className="mt-20 text-[12px] text-white/20">
+                        For safety, we may keep a copy of this chat for up to 30 days.
+                      </p>
+                    </div>
+                  )}
+                  {!temporaryChat && (
+                    <div className="mt-8 h-[24px]" />
                   )}
                 </div>
               )}
@@ -2548,6 +2786,7 @@ export default function Page() {
                   onReadAloud={handleReadAloud}
                   onStopAudio={handleStopAudio}
                   isSpeaking={isSpeaking}
+                  isTemporary={temporaryChat}
                 />
                 <p className="mt-4 text-center text-[12.5px] text-white/25 leading-relaxed">
                   Emilia can make mistakes. Check important info. By using it, you agree to our <span className="underline cursor-pointer hover:text-white/40">Terms</span> & <span className="underline cursor-pointer hover:text-white/40">Privacy Policy</span>.
@@ -2566,7 +2805,26 @@ export default function Page() {
                 Close
               </button>
             </div>
-            <Sidebar onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} />
+            <Sidebar
+              onAuthClick={openAuth}
+              onSignOut={signOut}
+              isAuthenticated={!!session}
+              userEmail={authUser?.email}
+              userName={displayName}
+              savedAccounts={savedAccounts}
+              activeAccountId={authUser?.id}
+              onSwitchAccount={startAccountSwitch}
+              onAddAccount={openAuth}
+              recentItems={recentItems}
+              onNewChat={createNewChat}
+              onOpenRecent={openRecentById}
+              onRenameRecent={renameRecentById}
+              onDeleteRecent={deleteRecentById}
+              pinnedChatIds={pinnedChatIds}
+              onTogglePin={onTogglePin}
+              onArchiveRecent={onArchiveRecent}
+              onUpgradeClick={() => { setUpgradeModalOpen(true); setOpen(false); }}
+            />
           </aside>
         </>
       )}
@@ -2920,23 +3178,33 @@ export default function Page() {
                     setEditProfileOpen(false);
                     return;
                   }
-                  const { data, error } = await supabase.auth.updateUser({
-                    data: {
-                      full_name: editDisplayName.trim() || displayName,
-                      username: editUsername.trim() || authUser.email?.split("@")[0] || "user",
-                      avatar_url: profilePhotoUrl,
-                    },
-                  });
-                  if (!error && data.user) {
-                    setAuthUser(data.user);
+                  setAuthBusy(true);
+                  setAuthError(null);
+                  try {
+                    const { data, error } = await supabase.auth.updateUser({
+                      data: {
+                        full_name: editDisplayName.trim() || displayName,
+                        username: editUsername.trim() || authUser.email?.split("@")[0] || "user",
+                        avatar_url: profilePhotoUrl,
+                      },
+                    });
+                    if (error) throw error;
+                    if (data.user) setAuthUser(data.user);
+                    setProfileMenuOpen(false);
+                    setEditProfileOpen(false);
+                  } catch (err) {
+                    setAuthError(err instanceof Error ? err.message : "Failed to update profile.");
+                  } finally {
+                    setAuthBusy(false);
                   }
-                  setEditProfileOpen(false);
                 }}
-                className="h-11 rounded-full bg-white px-8 text-[14px] font-bold text-black hover:bg-[#ececec] transition-all shadow-lg"
+                disabled={authBusy}
+                className="h-11 rounded-full bg-white px-8 text-[14px] font-bold text-black hover:bg-[#ececec] transition-all shadow-lg disabled:opacity-50"
               >
-                Save
+                {authBusy ? "Saving..." : "Save"}
               </button>
             </div>
+            {authError && <p className="mt-4 text-center text-[13px] text-[#ff9d9d]">{authError}</p>}
           </div>
         </div>
       )}
@@ -3064,6 +3332,9 @@ export default function Page() {
             <IconX />
           </button>
         </div>
+      )}
+      {upgradeModalOpen && (
+        <UpgradeModal isOpen={upgradeModalOpen} onClose={() => setUpgradeModalOpen(false)} />
       )}
     </main>
   );
