@@ -193,6 +193,7 @@ def web_results_to_context(results: list[dict[str, Any]]) -> str:
 def search_snapshot() -> dict[str, bool]:
     return {
         "tavily": bool(settings.tavily_api_key),
+        "you": bool(settings.you_api_key),
         "newsapi": bool(settings.news_api_key),
         "world_news": bool(settings.world_news_api_key),
         "newsdata": bool(settings.newsdata_api_key),
@@ -277,6 +278,7 @@ def _search_task_order(query: str, limit: int):
         return [
             ("google_cse", lambda: _google_search(query, limit)),
             ("tavily", lambda: _tavily_search(query, limit)),
+            ("you", lambda: _you_search(query, limit)),
             ("newsapi", lambda: _news_search(query, limit)),
             ("newsdata", lambda: _newsdata_search(query, limit)),
         ]
@@ -285,11 +287,13 @@ def _search_task_order(query: str, limit: int):
             ("newsdata", lambda: _newsdata_search(query, limit)),
             ("world_news", lambda: _world_news_search(query, limit)),
             ("newsapi", lambda: _news_search(query, limit)),
+            ("you", lambda: _you_search(query, limit)),
             ("tavily", lambda: _tavily_search(query, limit)),
             ("google_cse", lambda: _google_search(query, limit)),
         ]
     return [
         ("google_cse", lambda: _google_search(query, limit)),
+        ("you", lambda: _you_search(query, limit)),
         ("tavily", lambda: _tavily_search(query, limit)),
         ("newsdata", lambda: _newsdata_search(query, limit)),
         ("newsapi", lambda: _news_search(query, limit)),
@@ -861,6 +865,31 @@ def _world_news_search(query: str, limit: int) -> list[dict[str, Any]]:
                 "published_at": n.get("publish_date", ""),
             }
             for n in news[:limit]
+        ]
+    except Exception:
+        return []
+
+
+def _you_search(query: str, limit: int) -> list[dict[str, Any]]:
+    if not settings.you_api_key:
+        return []
+    try:
+        url = "https://api.you.com/v1/search"
+        headers = {"X-API-Key": settings.you_api_key}
+        params = {"query": query, "num_results": min(limit, 10)}
+        with httpx.Client(timeout=20.0) as client:
+            res = client.get(url, headers=headers, params=params)
+            res.raise_for_status()
+            data = res.json()
+        hits = data.get("hits", []) or []
+        return [
+            {
+                "title": hit.get("title", ""),
+                "url": hit.get("url", ""),
+                "snippet": hit.get("description", "") or hit.get("snippet", ""),
+                "source": "you.com",
+            }
+            for hit in hits[:limit]
         ]
     except Exception:
         return []

@@ -136,7 +136,6 @@ def call_cohere(messages: list[ChatMessage], model: str) -> ProviderResult:
     if not settings.cohere_api_key:
         raise RuntimeError("Missing COHERE_API_KEY")
     url = "https://api.cohere.ai/v1/chat"
-    # Cohere has a slightly different format, but we can use their newer chat endpoint
     payload = {
         "model": model,
         "message": _last_user_message(messages),
@@ -150,6 +149,24 @@ def call_cohere(messages: list[ChatMessage], model: str) -> ProviderResult:
         data = response.json()
     answer = data.get("text", "").strip()
     return ProviderResult(answer=answer, provider="cohere")
+
+
+def call_you_bot(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.you_api_key:
+        raise RuntimeError("Missing YOU_API_KEY")
+    url = "https://api.you.com/v1/chat/completions"
+    payload = {
+        "model": "you",
+        "messages": [{"role": m.role, "content": m.content} for m in messages],
+        "stream": False
+    }
+    headers = {"X-API-Key": settings.you_api_key, "Content-Type": "application/json"}
+    with httpx.Client(timeout=45.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="you_bot")
 
 
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:

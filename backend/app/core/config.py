@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     google_search_api_key: str = ""
     google_search_engine_id: str = ""
     resend_api_key: str = ""
+    you_api_key: str = ""
+    posthog_api_key: str = ""
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: str = ""
     cloudinary_api_secret: str = ""

@@ -865,15 +865,29 @@ function Sidebar({
                   {accountSubmenuOpen && (
                     <div className="absolute left-[calc(100%+8px)] bottom-0 w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl animate-[slidePop_.1s_ease-out]">
                       <div className="px-3 py-2 border-b border-white/5 mb-1">
-                        <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest">{userEmail}</p>
+                        <p className="text-[11px] text-white/40 font-bold uppercase tracking-widest">Accounts</p>
                       </div>
-                      <button className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f8a600] text-[11px] font-bold text-white">{initial}</div>
-                          <span className="text-[14px] font-medium">{userName}</span>
-                        </div>
-                        <IconCheck className="text-white/50 w-4 h-4" />
-                      </button>
+                      <div className="max-h-[200px] overflow-y-auto hide-scrollbar space-y-1">
+                        {savedAccounts.map((acc) => (
+                          <button
+                            key={acc.id}
+                            onClick={() => onSwitchAccount?.(acc)}
+                            className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#f8a600] text-[11px] font-bold text-white">
+                                {(acc.name?.[0] || acc.email[0]).toUpperCase()}
+                              </div>
+                              <div className="text-left min-w-0">
+                                <p className="truncate text-[13.5px] font-medium">{acc.name}</p>
+                                <p className="truncate text-[10px] text-white/30">{acc.email}</p>
+                              </div>
+                            </div>
+                            {acc.id === activeAccountId && <IconCheck className="text-white/50 w-4 h-4 shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="my-1 border-t border-white/5" />
                       <button onClick={onAddAccount} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors mt-1">
                         <IconPlus className="text-white/40 w-4 h-4" />
                         <span className="text-[14px] font-medium">Add account</span>
@@ -1086,8 +1100,19 @@ function InputBar({
   isSpeaking?: boolean;
   isTemporary?: boolean;
 }) {
+  const toolsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
+        if (toolsOpen) setToolsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [toolsOpen, setToolsOpen]);
+
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={toolsRef}>
       {toolsOpen && (
         <div className={`absolute ${hasMessages ? 'bottom-full mb-3' : 'top-full mt-2'} left-0 w-[320px] rounded-2xl bg-[#171717] border border-white/10 p-2 shadow-2xl z-50 animate-[slidePop_.15s_ease-out]`}>
           {!isAuthenticated ? (
