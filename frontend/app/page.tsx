@@ -561,6 +561,17 @@ function RecentChatItem({
   setOpenOptionsId: (id: string | null) => void;
 }) {
   const isMenuOpen = openOptionsId === item.id;
+  const [menuTop, setMenuTop] = useState(0);
+  const [menuLeft, setMenuLeft] = useState(0);
+
+  const handleOpenOptions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Position to the right of the sidebar item
+    setMenuTop(rect.top);
+    setMenuLeft(rect.right + 8);
+    setOpenOptionsId(isMenuOpen ? null : item.id);
+  };
 
   return (
     <div className="relative group/item px-3">
@@ -580,7 +591,7 @@ function RecentChatItem({
           <IconPin className={isPinned ? "fill-current" : ""} />
         </button>
         <button
-          onClick={(e) => { e.stopPropagation(); setOpenOptionsId(isMenuOpen ? null : item.id); }}
+          onClick={handleOpenOptions}
           className="p-1 rounded-md hover:bg-white/10 text-white/40 hover:text-white"
           title="More options"
         >
@@ -590,8 +601,12 @@ function RecentChatItem({
 
       {isMenuOpen && (
         <>
-          <div className="fixed inset-0 z-[110]" onClick={() => setOpenOptionsId(null)} />
-          <div className="absolute left-[calc(100%+8px)] top-0 w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl z-[120] animate-[slidePop_.1s_ease-out]">
+          {/* Use a portal-like fixed backdrop and menu to avoid sidebar overflow clipping */}
+          <div className="fixed inset-0 z-[240]" onClick={(e) => { e.stopPropagation(); setOpenOptionsId(null); }} />
+          <div
+            className="fixed w-[240px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl z-[250] animate-[slidePop_.1s_ease-out]"
+            style={{ top: `${menuTop}px`, left: `${menuLeft}px` }}
+          >
             {/* Top Group */}
             <button
               onClick={(e) => {
