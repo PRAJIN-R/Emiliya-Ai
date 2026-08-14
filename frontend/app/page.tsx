@@ -591,9 +591,10 @@ function RecentChatItem({
       {isMenuOpen && (
         <>
           <div className="fixed inset-0 z-[110]" onClick={() => setOpenOptionsId(null)} />
-          <div className="absolute left-full top-0 ml-1 w-[180px] rounded-xl bg-[#202123] border border-white/10 p-1.5 shadow-2xl z-[120] animate-[slidePop_.1s_ease-out]">
+          <div className="absolute right-0 top-full mt-1 w-[180px] rounded-xl bg-[#232323] border border-white/10 p-1.5 shadow-2xl z-[120] animate-[slidePop_.1s_ease-out]">
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 if (navigator.share) {
                   navigator.share({ title: item.title, text: `Check out this chat: ${item.title}` }).catch(() => {});
                 }
@@ -604,29 +605,32 @@ function RecentChatItem({
               <IconShare className="text-white/40" /> Share
             </button>
             <button
-              onClick={() => { onRenameRecent?.(item.id); setOpenOptionsId(null); }}
+              onClick={(e) => { e.stopPropagation(); onRenameRecent?.(item.id); setOpenOptionsId(null); }}
               className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
             >
               <IconRename className="text-white/40" /> Rename
             </button>
-            <button className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors">
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpenOptionsId(null); }}
+              className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
+            >
               <IconFolder className="text-white/40" /> Move to project
             </button>
             <button
-              onClick={() => { onTogglePin?.(item.id); setOpenOptionsId(null); }}
+              onClick={(e) => { e.stopPropagation(); onTogglePin?.(item.id); setOpenOptionsId(null); }}
               className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
             >
               <IconPin className="text-white/40" /> {isPinned ? 'Unpin' : 'Pin chat'}
             </button>
             <button
-              onClick={() => { onArchiveRecent?.(item.id); setOpenOptionsId(null); }}
+              onClick={(e) => { e.stopPropagation(); onArchiveRecent?.(item.id); setOpenOptionsId(null); }}
               className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
             >
               <IconArchive className="text-white/40" /> Archive
             </button>
             <div className="my-1 border-t border-white/5" />
             <button
-              onClick={() => { onDeleteRecent?.(item.id); setOpenOptionsId(null); }}
+              onClick={(e) => { e.stopPropagation(); onDeleteRecent?.(item.id); setOpenOptionsId(null); }}
               className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-red-400 transition-colors"
             >
               <IconDelete /> Delete
@@ -1037,7 +1041,7 @@ function Sidebar({
         </div>
       )}
 
-      <div className={`flex-1 overflow-y-auto px-3 py-2 space-y-1 ${compact ? "flex flex-col items-center" : ""}`}>
+      <div className={`flex-1 overflow-y-auto hide-scrollbar px-3 py-2 space-y-1 ${compact ? "flex flex-col items-center" : ""}`}>
         {!compact && (
           <button
             onClick={onNewChat}
