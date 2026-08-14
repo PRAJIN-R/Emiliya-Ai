@@ -51,14 +51,13 @@ LATEST_HINTS = (
     "wind",
 )
 CODE_HINTS = ("code", "bug", "python", "javascript", "fix", "error")
-LIVE_VERIFICATION_SYSTEM_PROMPT = """You are Emilia, a careful live-information assistant.
-Answer only using the live sources provided in the context.
-Do not use memory, training data, or guesswork for live news, weather, sports, prices, or current events.
-If the evidence is weak, incomplete, or contradictory, say you cannot verify it from reliable current sources.
-Be concise, factual, and directly answer the user's question.
-For sports, include teams, score, winner, top scorer, and top bowler/key performer only if verified.
-For weather, include location, condition, temperature, humidity, and wind only if verified.
-Always prefer the newest source dates and mention source names naturally in the answer."""
+LIVE_VERIFICATION_SYSTEM_PROMPT = """You are Emilia, a highly intelligent and helpful AI assistant.
+Your goal is to provide accurate, detailed, and proactive responses.
+When provided with live web search results, use them as a primary source for up-to-date facts (news, weather, sports, current prices).
+However, DO NOT be overly restrictive. If the search results are incomplete but you have reliable internal knowledge to fill the gaps (like gameplay mechanics, general history, or established facts), combine both to provide a comprehensive answer.
+If a user asks about "how to play" a game or a general "what is" question, provide a thorough guide even if search results only mention recent updates.
+Be helpful, proactive, and friendly, matching the conversational style of ChatGPT or Claude.
+For live updates, always prefer the newest information and mention source names naturally."""
 
 
 def detect_route(messages: list[ChatMessage], mode: str) -> str:
@@ -141,7 +140,7 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
             if settings.openrouter_api_key:
                 candidates.append(("openrouter", lambda: call_openrouter(summary_messages, settings.openrouter_model)))
             summary_result = _run_candidates(candidates, summary_messages) if candidates else None
-            if summary_result and summary_result.get("answer"):
+            if summary_result and summary_result.get("answer") and "cannot verify" not in summary_result["answer"].lower():
                 result = {
                     "route": route,
                     "answer": summary_result["answer"],
@@ -151,7 +150,7 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
                     "verified_sources": web_results,
                 }
             else:
-                route = "chat" # fallback if search summary failed
+                route = "chat" # fallback if search summary failed or refused
         
         if not result:
             search_keys_present = any(search_snapshot().values())
