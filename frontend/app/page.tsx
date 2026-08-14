@@ -388,7 +388,84 @@ type DebugChatResult = {
   answer: string;
 };
 
-function MarkdownMessage({ text }: { text: string }) {
+function IconExternal({ className }: { className?: string }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ExternalLinkModal({ isOpen, url, onClose }: { isOpen: boolean; url: string; onClose: () => void }) {
+  if (!isOpen) return null;
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      onClose();
+    } catch {}
+  };
+
+  const handleOpen = () => {
+    window.open(url, "_blank", "noopener,noreferrer");
+    onClose();
+  };
+
+  // Helper to bold the domain part
+  const renderFormattedUrl = () => {
+    try {
+      const parsed = new URL(url);
+      const domain = parsed.hostname;
+      const rest = url.replace(parsed.protocol + "//" + domain, "");
+      return (
+        <span className="break-all text-[14px] text-white/50">
+          {parsed.protocol}//<span className="text-white font-bold">{domain}</span>{rest}
+        </span>
+      );
+    } catch {
+      return <span className="break-all text-[14px] text-white/50">{url}</span>;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 backdrop-blur-[2px] p-4 animate-[fadeIn_.2s_ease-out]">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative w-full max-w-[440px] rounded-[28px] bg-[#232323] border border-white/10 p-6 text-white shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[18px] font-bold text-white/90">External site</h3>
+          <button onClick={onClose} className="p-1 hover:bg-white/5 rounded-lg text-white/40 hover:text-white transition-colors">
+            <IconX />
+          </button>
+        </div>
+
+        <p className="text-[14.5px] text-white/70 leading-relaxed mb-6">
+          Verify this link is where you&apos;d like to go. <span className="text-white/40 underline cursor-pointer hover:text-white/60">Learn more</span>
+        </p>
+
+        <div className="rounded-2xl bg-black/20 border border-white/5 p-4 mb-8">
+          {renderFormattedUrl()}
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={handleCopy}
+            className="h-11 px-6 rounded-full border border-white/10 text-[14px] font-bold hover:bg-white/5 transition-all"
+          >
+            Copy link
+          </button>
+          <button
+            onClick={handleOpen}
+            className="h-11 px-6 rounded-full bg-white text-black text-[14px] font-bold hover:bg-[#ececec] transition-all shadow-lg"
+          >
+            Open link
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarkdownMessage({ text, onLinkClick }: { text: string; onLinkClick?: (url: string) => void }) {
   const blocks = text.split("```");
   return (
     <div className="space-y-2">
@@ -419,6 +496,33 @@ function MarkdownMessage({ text }: { text: string }) {
                   <div key={idx} className="my-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
                     <img src={imgMatch[2]} alt={imgMatch[1] || "AI Image"} className="max-h-[512px] w-auto object-contain" />
                   </div>
+                );
+              }
+
+              // Parse links [Title](URL)
+              const parts = line.split(/(\[.*?\]\(.*?\))/g);
+              if (parts.length > 1) {
+                return (
+                  <p key={idx}>
+                    {parts.map((part, pIdx) => {
+                      const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
+                      if (linkMatch) {
+                        const title = linkMatch[1];
+                        const url = linkMatch[2];
+                        return (
+                          <button
+                            key={pIdx}
+                            onClick={() => onLinkClick?.(url)}
+                            className="inline-flex items-center gap-0.5 text-white underline underline-offset-4 decoration-white/20 hover:decoration-white transition-all font-medium"
+                          >
+                            {title}
+                            <IconExternal className="opacity-40 group-hover:opacity-100" />
+                          </button>
+                        );
+                      }
+                      return part;
+                    })}
+                  </p>
                 );
               }
 
@@ -1615,6 +1719,8 @@ export default function Page() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [externalLinkModalOpen, setExternalLinkModalOpen] = useState(false);
+  const [pendingLinkUrl, setPendingLinkUrl] = useState("");
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [providerHealth, setProviderHealth] = useState<ProviderHealth | null>(null);
   const [providerHealthLoading, setProviderHealthLoading] = useState(false);
@@ -2936,7 +3042,15 @@ export default function Page() {
                         ) : (
                           <div className="w-full max-w-[95%]">
                             <div className="text-[15.5px] leading-relaxed text-[#ececec] whitespace-pre-wrap">
-                              {m.role === "assistant" ? <MarkdownMessage text={m.content} /> : m.content}
+                              {m.role === "assistant" ? (
+                                <MarkdownMessage
+                                  text={m.content}
+                                  onLinkClick={(url) => {
+                                    setPendingLinkUrl(url);
+                                    setExternalLinkModalOpen(true);
+                                  }}
+                                />
+                              ) : m.content}
                             </div>
                             {m.content.trim() && (
                               <div className="mt-4 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
@@ -3577,6 +3691,14 @@ export default function Page() {
           isOpen={settingsModalOpen}
           onClose={() => setSettingsModalOpen(false)}
           onUpgrade={() => { setSettingsModalOpen(false); setUpgradeModalOpen(true); }}
+        />
+      )}
+
+      {externalLinkModalOpen && (
+        <ExternalLinkModal
+          isOpen={externalLinkModalOpen}
+          url={pendingLinkUrl}
+          onClose={() => setExternalLinkModalOpen(false)}
         />
       )}
     </main>
