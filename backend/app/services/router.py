@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from app.core.config import settings
 from app.models.schemas import ChatMessage
+from app.services.memory import retrieve_memory, store_memory
 from app.services.providers import (
     call_ai_horde,
     call_bazaarlink,
@@ -72,8 +73,21 @@ def detect_route(messages: list[ChatMessage], mode: str) -> str:
     return "chat"
 
 
-def run_router(messages: list[ChatMessage], mode: str) -> dict:
+def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = None) -> dict:
     route = detect_route(messages, mode)
+
+    # 0. Memory retrieval for personalized context
+    if user_id:
+        user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
+        long_term_memory = retrieve_memory(user_id, user_query)
+        if long_term_memory:
+            # Inject memory as a system hint if relevant
+            messages = [
+                ChatMessage(role="system", content=f"User's past context/memory:\n{long_term_memory}"),
+                *messages
+            ]
+
+    result = {}
 
     if route == "coding":
         candidates = []
@@ -93,9 +107,9 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
             candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
         if settings.openrouter_api_key:
             candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
-        return {"route": route, **_run_candidates(candidates, messages)}
+        result = {"route": route, **_run_candidates(candidates, messages)}
 
-    if route == "search":
+    elif route == "search":
         user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
         web_results = search_web(user_query, limit=8)
         if web_results:
@@ -128,7 +142,7 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
                 candidates.append(("openrouter", lambda: call_openrouter(summary_messages, settings.openrouter_model)))
             summary_result = _run_candidates(candidates, summary_messages) if candidates else None
             if summary_result and summary_result.get("answer"):
-                return {
+                result = {
                     "route": route,
                     "answer": summary_result["answer"],
                     "provider": summary_result.get("provider", "local"),
@@ -136,58 +150,67 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
                     "provider_errors": summary_result.get("provider_errors", []),
                     "verified_sources": web_results,
                 }
+            else:
+                route = "chat" # fallback if search summary failed
         
-        search_keys_present = any(search_snapshot().values())
-        if not search_keys_present:
-            route = "chat"
-        else:
-            answer = build_live_answer(user_query, web_results)
-            if not answer or not web_results:
-                # If no live results found, fall back to LLM knowledge
+        if not result:
+            search_keys_present = any(search_snapshot().values())
+            if not search_keys_present:
                 route = "chat"
             else:
-                provider = web_results[0].get("source") or "web"
-                return {
-                    "route": route,
-                    "answer": answer,
-                    "provider": provider,
-                    "fallback_used": False,
-                    "provider_errors": [],
-                    "verified_sources": web_results,
-                }
+                answer = build_live_answer(user_query, web_results)
+                if not answer or not web_results:
+                    route = "chat"
+                else:
+                    provider = web_results[0].get("source") or "web"
+                    result = {
+                        "route": route,
+                        "answer": answer,
+                        "provider": provider,
+                        "fallback_used": False,
+                        "provider_errors": [],
+                        "verified_sources": web_results,
+                    }
 
-    candidates = []
-    # Speed & intelligence priority
-    if settings.eight_scale_api_key:
-        candidates.append(("8scale", lambda: call_eight_scale(messages)))
-    if settings.cerebras_api_key:
-        candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
-    if settings.groq_api_key:
-        candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
-    if settings.you_api_key:
-        candidates.append(("you_bot", lambda: call_you_bot(messages)))
-    if settings.edyx_api_key:
-        candidates.append(("edyx", lambda: call_edyx(messages)))
-    if settings.plugsky_api_key:
-        candidates.append(("plugsky", lambda: call_plugsky(messages)))
-    if settings.free_api_key:
-        candidates.append(("free_api", lambda: call_free_api(messages)))
-    if settings.bazaarlink_api_key:
-        candidates.append(("bazaarlink", lambda: call_bazaarlink(messages)))
-    if settings.gemini_api_key:
-        candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
-    if settings.mistral_api_key:
-        candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
-    if settings.xai_api_key:
-        candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
-    if settings.cohere_api_key:
-        candidates.append(("cohere", lambda: call_cohere(messages, settings.cohere_model)))
-    if settings.ai_horde_api_key:
-        candidates.append(("ai_horde", lambda: call_ai_horde(messages)))
-    if settings.openrouter_api_key:
-        candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
+    if route == "chat" or not result:
+        candidates = []
+        if settings.you_api_key:
+            candidates.append(("you_bot", lambda: call_you_bot(messages)))
+        if settings.eight_scale_api_key:
+            candidates.append(("8scale", lambda: call_eight_scale(messages)))
+        if settings.cerebras_api_key:
+            candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
+        if settings.groq_api_key:
+            candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
+        if settings.edyx_api_key:
+            candidates.append(("edyx", lambda: call_edyx(messages)))
+        if settings.plugsky_api_key:
+            candidates.append(("plugsky", lambda: call_plugsky(messages)))
+        if settings.free_api_key:
+            candidates.append(("free_api", lambda: call_free_api(messages)))
+        if settings.bazaarlink_api_key:
+            candidates.append(("bazaarlink", lambda: call_bazaarlink(messages)))
+        if settings.gemini_api_key:
+            candidates.append(("gemini", lambda: call_gemini(messages, settings.gemini_model)))
+        if settings.mistral_api_key:
+            candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
+        if settings.xai_api_key:
+            candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
+        if settings.cohere_api_key:
+            candidates.append(("cohere", lambda: call_cohere(messages, settings.cohere_model)))
+        if settings.ai_horde_api_key:
+            candidates.append(("ai_horde", lambda: call_ai_horde(messages)))
+        if settings.openrouter_api_key:
+            candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
+        result = {"route": route, **_run_candidates(candidates, messages)}
 
-    return {"route": route, **_run_candidates(candidates, messages)}
+    # Auto-store the exchange in long-term memory if user_id present
+    if user_id and result.get("answer"):
+        last_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
+        if last_query:
+            store_memory(user_id, f"Q: {last_query}\nA: {result['answer']}")
+
+    return result
 
 
 def fallback_router(messages: list[ChatMessage]) -> dict:
@@ -202,8 +225,6 @@ def fallback_router(messages: list[ChatMessage]) -> dict:
         candidates.append(("edyx", lambda: call_edyx(messages)))
     if settings.plugsky_api_key:
         candidates.append(("plugsky", lambda: call_plugsky(messages)))
-    if settings.free_api_key:
-        candidates.append(("free_api", lambda: call_free_api(messages)))
     if settings.xai_api_key:
         candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
     if settings.gemini_api_key:
@@ -232,18 +253,11 @@ def provider_snapshot() -> dict:
             "you": bool(settings.you_api_key),
             "openrouter": bool(settings.openrouter_api_key),
             "ai_horde": bool(settings.ai_horde_api_key),
-            "bazaarlink": bool(settings.bazaarlink_api_key),
             "edyx": bool(settings.edyx_api_key),
             "plugsky": bool(settings.plugsky_api_key),
-            "kilo": bool(settings.kilo_api_key),
-            "pixazo": bool(settings.pixazo_api_key),
-            "pollinations": bool(settings.pollinations_api_key),
-            "journey": bool(settings.journey_api_key),
-            "magic_hour": bool(settings.magic_hour_api_key),
-            "json2video": bool(settings.json2video_api_key),
-            "eight_scale": bool(settings.eight_scale_api_key),
-            "wireflow": bool(settings.wireflow_api_key),
-            "free_api": bool(settings.free_api_key),
+            "remem": bool(settings.remem_api_key),
+            "cathedral": bool(settings.cathedral_api_key),
+            "audaxic": bool(settings.audaxic_api_key),
             "tavily": bool(settings.tavily_api_key),
             "newsapi": bool(settings.news_api_key),
             "world_news": bool(settings.world_news_api_key),
@@ -261,15 +275,13 @@ def provider_snapshot() -> dict:
             "langchain": bool(settings.langchain_api_key),
         },
         "provider_priority": [
-            "8scale (Ultra-Fast)",
+            "You.com (Premium Search)",
             "Cerebras (Fast)",
             "Groq (Fast)",
-            "You.com (Search)",
             "Edyx / Plugsky",
             "Gemini / Mistral",
             "xAI / Grok",
             "Cohere",
-            "Bazaarlink",
             "AI Horde",
             "OpenRouter",
             "Local fallback",

@@ -1936,6 +1936,7 @@ export default function Page() {
         body: JSON.stringify({
           messages: currentMessages.map((m) => ({ role: m.role, content: m.content })),
           mode: webSearchOn ? "search" : "auto",
+          user_id: authUser?.id
         }),
       });
       if (!res.ok) {
@@ -2018,6 +2019,7 @@ export default function Page() {
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
           mode: webSearchOn ? "search" : "auto",
+          user_id: authUser?.id
         }),
       });
       if (!res.ok) {
