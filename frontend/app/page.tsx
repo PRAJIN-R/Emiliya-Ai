@@ -488,7 +488,15 @@ function RecentChatItem({
         <>
           <div className="fixed inset-0 z-[110]" onClick={() => setOpenOptionsId(null)} />
           <div className="absolute left-full top-0 ml-1 w-[180px] rounded-xl bg-[#202123] border border-white/10 p-1.5 shadow-2xl z-[120] animate-[slidePop_.1s_ease-out]">
-            <button className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors">
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: item.title, text: `Check out this chat: ${item.title}` }).catch(() => {});
+                }
+                setOpenOptionsId(null);
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
+            >
               <IconShare className="text-white/40" /> Share
             </button>
             <button
@@ -504,7 +512,7 @@ function RecentChatItem({
               onClick={() => { onTogglePin?.(item.id); setOpenOptionsId(null); }}
               className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-[13px] hover:bg-white/5 text-white/90 transition-colors"
             >
-              <IconPin className="text-white/40" /> {isPinned ? 'Unpin chat' : 'Pin chat'}
+              <IconPin className="text-white/40" /> {isPinned ? 'Unpin' : 'Pin chat'}
             </button>
             <button
               onClick={() => { onArchiveRecent?.(item.id); setOpenOptionsId(null); }}
@@ -547,6 +555,193 @@ function IconKeyboard({ className }: { className?: string }) {
       <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" />
       <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h.01M11 14h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function IconBell({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconVoice({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeWidth="2" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconBilling({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M2 10h20M7 15h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconData({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+function IconStorage({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M21 10V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2M21 14v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M3 10h18M3 14h18" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+function IconShield({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconLock({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SettingsModal({ isOpen, onClose, onUpgrade }: { isOpen: boolean; onClose: () => void; onUpgrade: () => void }) {
+  const [activeTab, setActiveTab] = useState("General");
+  if (!isOpen) return null;
+
+  const tabs = [
+    { name: "General", icon: <IconSettings /> },
+    { name: "Notifications", icon: <IconBell /> },
+    { name: "Personalization", icon: <IconPersonalization /> },
+    { name: "Plugins", icon: <IconApps /> },
+    { name: "Voice", icon: <IconVoice /> },
+    { name: "Billing", icon: <IconBilling /> },
+    { name: "Data controls", icon: <IconData /> },
+    { name: "Storage", icon: <IconStorage /> },
+    { name: "Safety", icon: <IconShield /> },
+    { name: "Security and login", icon: <IconLock /> },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-[2px] p-4 animate-[fadeIn_.2s_ease-out]">
+      {/* Click outside to close */}
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative flex h-[640px] w-full max-w-[880px] overflow-hidden rounded-[24px] border border-white/10 bg-[#171717] text-white shadow-2xl" onClick={e => e.stopPropagation()}>
+        {/* Sidebar */}
+        <aside className="w-[280px] border-r border-white/5 bg-[#0d0d0d] p-4 flex flex-col">
+           <button onClick={onClose} className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/5 transition-colors text-white/50">
+             <IconX />
+           </button>
+
+           <div className="relative mb-6">
+             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 w-4 h-4" />
+             <input
+               placeholder="Search settings"
+               className="h-10 w-full rounded-xl bg-white/5 pl-10 pr-4 text-[14px] outline-none placeholder:text-white/20 focus:bg-white/10 transition-all"
+             />
+           </div>
+
+           <div className="flex-1 overflow-y-auto space-y-0.5 hide-scrollbar">
+             {tabs.map(tab => (
+               <button
+                 key={tab.name}
+                 onClick={() => setActiveTab(tab.name)}
+                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] font-medium transition-all ${activeTab === tab.name ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5 hover:text-white/80'}`}
+               >
+                 <span className="shrink-0">{tab.icon}</span>
+                 <span className="truncate">{tab.name}</span>
+               </button>
+             ))}
+           </div>
+        </aside>
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-8 hide-scrollbar">
+          <div className="max-w-[520px]">
+            <h2 className="text-[20px] font-bold mb-8">{activeTab}</h2>
+
+            {activeTab === "General" && (
+              <div className="space-y-8">
+                {/* Upgrade Banner */}
+                <div className="flex items-center justify-between rounded-2xl bg-white/[0.03] p-5 border border-white/5">
+                  <div>
+                    <h4 className="font-bold text-[15px]">Do more with ChatGPT</h4>
+                    <p className="text-[13px] text-white/40">Get higher limits and advanced features.</p>
+                  </div>
+                  <button onClick={onUpgrade} className="h-10 rounded-full bg-white px-5 text-[13.5px] font-bold text-black hover:bg-[#ececec] transition-colors shadow-lg">
+                    Upgrade
+                  </button>
+                </div>
+
+                <div className="space-y-6 pt-2">
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[15px] font-medium text-white/90">Appearance</p>
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      <span className="text-[14px]">System</span>
+                      <IconChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[15px] font-medium text-white/90">Contrast</p>
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      <span className="text-[14px]">System</span>
+                      <IconChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[15px] font-medium text-white/90">Accent color</p>
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-white/40" />
+                        <span className="text-[14px]">Default</span>
+                      </div>
+                      <IconChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[15px] font-medium text-white/90">Icon color</p>
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-black border border-white/20" />
+                        <span className="text-[14px]">Black</span>
+                      </div>
+                      <IconChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between group">
+                    <p className="text-[15px] font-medium text-white/90">Language</p>
+                    <button className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/5 text-white/50 group-hover:text-white/80 transition-colors">
+                      <span className="text-[14px]">Auto-detect</span>
+                      <IconChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab !== "General" && (
+               <div className="mt-20 text-center">
+                 <p className="text-white/20 text-[14px]">This section is coming soon in the next update.</p>
+               </div>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
 
@@ -677,6 +872,7 @@ function Sidebar({
   onTogglePin?: (id: string) => void;
   onArchiveRecent?: (id: string) => void;
   onUpgradeClick?: () => void;
+  onOpenSettings?: () => void;
 }) {
   const [openOptionsId, setOpenOptionsId] = useState<string | null>(null);
   const [helpSubmenuOpen, setHelpSubmenuOpen] = useState(false);
@@ -812,7 +1008,7 @@ function Sidebar({
         {!compact &&
           [
             { label: "See plans and pricing", icon: <IconApps />, onClick: onUpgradeClick },
-            { label: "Settings", icon: <IconSettings />, onClick: onOpenEditProfile },
+            { label: "Settings", icon: <IconSettings />, onClick: onOpenSettings },
             { label: "Help", icon: <IconHelp />, onClick: () => setHelpSubmenuOpen(!helpSubmenuOpen) },
           ].map((item) => (
             <button
@@ -910,7 +1106,7 @@ function Sidebar({
                   <IconUserCircle className="text-white/40" />
                   <span className="text-[14.5px] font-medium">Profile</span>
                 </button>
-                <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+                <button onClick={onOpenSettings} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
                   <IconSettings className="text-white/40" />
                   <span className="text-[14.5px] font-medium">Settings</span>
                 </button>
@@ -994,7 +1190,7 @@ function Sidebar({
                 <button onClick={onUpgradeClick} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
                   <IconSpark className="text-white/40" /> See plans and pricing
                 </button>
-                <button onClick={onOpenEditProfile} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
+                <button onClick={onOpenSettings} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[14.5px] hover:bg-white/5 text-white/90 transition-colors text-left font-medium">
                   <IconSettings className="text-white/40" /> Settings
                 </button>
                 <div className="my-1.5 border-t border-white/5" />
@@ -1407,6 +1603,7 @@ export default function Page() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
   const [providerHealth, setProviderHealth] = useState<ProviderHealth | null>(null);
   const [providerHealthLoading, setProviderHealthLoading] = useState(false);
@@ -2558,11 +2755,12 @@ export default function Page() {
           onTogglePin={onTogglePin}
           onArchiveRecent={onArchiveRecent}
           onUpgradeClick={() => setUpgradeModalOpen(true)}
+          onOpenSettings={() => setSettingsModalOpen(true)}
         />
       </aside>
 
       <aside className="hidden h-screen w-[92px] border-r border-neutral-800 bg-black md:flex md:flex-col lg:hidden">
-        <Sidebar compact sidebarCollapsed hasRecents={hasRecents} compactGuestMenuOpen={compactGuestMenuOpen} onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)} onOpenEditProfile={() => setEditProfileOpen(true)} accountSwitchOpen={accountSwitchOpen} onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)} onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} onUpgradeClick={() => setUpgradeModalOpen(true)} />
+        <Sidebar compact sidebarCollapsed hasRecents={hasRecents} compactGuestMenuOpen={compactGuestMenuOpen} onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)} onOpenEditProfile={() => setEditProfileOpen(true)} accountSwitchOpen={accountSwitchOpen} onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)} onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} onUpgradeClick={() => setUpgradeModalOpen(true)} onOpenSettings={() => setSettingsModalOpen(true)} />
       </aside>
 
       <section className="app-main relative min-w-0 flex-1 flex flex-col bg-[#0c0d10] transition-all duration-200 h-screen overflow-hidden">
@@ -2849,6 +3047,7 @@ export default function Page() {
               onTogglePin={onTogglePin}
               onArchiveRecent={onArchiveRecent}
               onUpgradeClick={() => { setUpgradeModalOpen(true); setOpen(false); }}
+              onOpenSettings={() => { setSettingsModalOpen(true); setOpen(false); }}
             />
           </aside>
         </>
@@ -3360,6 +3559,14 @@ export default function Page() {
       )}
       {upgradeModalOpen && (
         <UpgradeModal isOpen={upgradeModalOpen} onClose={() => setUpgradeModalOpen(false)} />
+      )}
+
+      {settingsModalOpen && (
+        <SettingsModal
+          isOpen={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
+          onUpgrade={() => { setSettingsModalOpen(false); setUpgradeModalOpen(true); }}
+        />
       )}
     </main>
   );
