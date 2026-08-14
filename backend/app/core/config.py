@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     json2video_api_key: str = ""
     eight_scale_api_key: str = ""
     wireflow_api_key: str = ""
+    free_api_key: str = ""
+    journey_api_key: str = ""
     langchain_api_key: str = ""
     email_from: str = "no-reply@example.com"
     email_sender_name: str = "Emilia"

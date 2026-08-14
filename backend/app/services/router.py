@@ -9,6 +9,7 @@ from app.services.providers import (
     call_cohere,
     call_edyx,
     call_eight_scale,
+    call_free_api,
     call_gemini,
     call_groq,
     call_mistral,
@@ -169,6 +170,8 @@ def run_router(messages: list[ChatMessage], mode: str) -> dict:
         candidates.append(("edyx", lambda: call_edyx(messages)))
     if settings.plugsky_api_key:
         candidates.append(("plugsky", lambda: call_plugsky(messages)))
+    if settings.free_api_key:
+        candidates.append(("free_api", lambda: call_free_api(messages)))
     if settings.bazaarlink_api_key:
         candidates.append(("bazaarlink", lambda: call_bazaarlink(messages)))
     if settings.gemini_api_key:
@@ -199,6 +202,8 @@ def fallback_router(messages: list[ChatMessage]) -> dict:
         candidates.append(("edyx", lambda: call_edyx(messages)))
     if settings.plugsky_api_key:
         candidates.append(("plugsky", lambda: call_plugsky(messages)))
+    if settings.free_api_key:
+        candidates.append(("free_api", lambda: call_free_api(messages)))
     if settings.xai_api_key:
         candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
     if settings.gemini_api_key:
@@ -233,10 +238,12 @@ def provider_snapshot() -> dict:
             "kilo": bool(settings.kilo_api_key),
             "pixazo": bool(settings.pixazo_api_key),
             "pollinations": bool(settings.pollinations_api_key),
+            "journey": bool(settings.journey_api_key),
             "magic_hour": bool(settings.magic_hour_api_key),
             "json2video": bool(settings.json2video_api_key),
             "eight_scale": bool(settings.eight_scale_api_key),
             "wireflow": bool(settings.wireflow_api_key),
+            "free_api": bool(settings.free_api_key),
             "tavily": bool(settings.tavily_api_key),
             "newsapi": bool(settings.news_api_key),
             "world_news": bool(settings.world_news_api_key),

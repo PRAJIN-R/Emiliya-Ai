@@ -201,6 +201,21 @@ def call_bazaarlink(messages: list[ChatMessage]) -> ProviderResult:
     return ProviderResult(answer=answer, provider="bazaarlink")
 
 
+def call_free_api(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.free_api_key:
+        raise RuntimeError("Missing FREE_API_KEY")
+    # Assuming standard OpenAI compatible endpoint
+    url = "https://api.free-api.com/v1/chat/completions"
+    payload = {"model": "gpt-4o", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    headers = {"Authorization": f"Bearer {settings.free_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=40.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="free_api")
+
+
 def call_cerebras(messages: list[ChatMessage], model: str) -> ProviderResult:
     if not settings.cerebras_api_key:
         raise RuntimeError("Missing CEREBRAS_API_KEY")
@@ -253,6 +268,23 @@ def call_you_bot(messages: list[ChatMessage]) -> ProviderResult:
 
 
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:
+    # 0. Try JourneyAPI (Midjourney)
+    if settings.journey_api_key:
+        try:
+            url = "https://api.journeyapi.co/v1/midjourney/imagine"
+            headers = {"Authorization": f"Bearer {settings.journey_api_key}", "Content-Type": "application/json"}
+            payload = {"prompt": prompt}
+            with httpx.Client(timeout=30.0) as client:
+                res = client.post(url, headers=headers, json=payload)
+                if res.status_code == 200:
+                    data = res.json()
+                    # Midjourney is async, but some providers return a quick preview or we can return the task info
+                    # For now, we'll try to find a URL in the response if it exists
+                    if data.get("url"):
+                         return {"url": data["url"], "provider": "journeyapi"}
+        except Exception:
+            pass
+
     # 1. Try Pollinations (Highly Reliable & Free/Fast)
     if settings.pollinations_api_key:
         try:
