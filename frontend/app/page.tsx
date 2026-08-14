@@ -842,6 +842,7 @@ function Sidebar({
   onTogglePin,
   onArchiveRecent,
   onUpgradeClick,
+  onOpenSettings,
 }: {
   compact?: boolean;
   sidebarCollapsed?: boolean;
@@ -1005,21 +1006,31 @@ function Sidebar({
       </div>
 
       <div className={`px-3 py-4 space-y-1 border-t border-white/10 ${compact ? "flex flex-col items-center" : ""}`}>
-        {!compact &&
-          [
-            { label: "See plans and pricing", icon: <IconApps />, onClick: onUpgradeClick },
-            { label: "Settings", icon: <IconSettings />, onClick: onOpenSettings },
-            { label: "Help", icon: <IconHelp />, onClick: () => setHelpSubmenuOpen(!helpSubmenuOpen) },
-          ].map((item) => (
+        {!compact && (
+          <>
             <button
-              key={item.label}
-              onClick={item.onClick}
+              onClick={onUpgradeClick}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] text-[#ececec]"
             >
-              <span className="shrink-0">{item.icon}</span>
-              <span>{item.label}</span>
+              <IconApps className="shrink-0" />
+              <span>See plans and pricing</span>
             </button>
-          ))}
+            <button
+              onClick={onOpenSettings}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] text-[#ececec]"
+            >
+              <IconSettings className="shrink-0" />
+              <span>Settings</span>
+            </button>
+            <button
+              onClick={() => setHelpSubmenuOpen(!helpSubmenuOpen)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] text-[#ececec]"
+            >
+              <IconHelp className="shrink-0" />
+              <span>Help</span>
+            </button>
+          </>
+        )}
 
         {!compact && !isAuthenticated && (
           <div className="mt-2 rounded-xl bg-white/[0.03] p-3 border border-white/[0.06]">
@@ -2111,14 +2122,12 @@ export default function Page() {
           }
         }
       } else {
-        // Clear state if not authenticated
+        // Guest mode: clear history from sidebar
         setThreads([]);
         setPinnedChatIds([]);
         setRecentTitles([]);
         setHasRecents(false);
       }
-      const recentRaw = localStorage.getItem("emilia_recent_chats");
-      setHasRecents(!!recentRaw);
     } catch {
       setHasRecents(false);
     }

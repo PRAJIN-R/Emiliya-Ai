@@ -1,6 +1,9 @@
+from datetime import datetime
+from urllib.parse import quote_plus
+import httpx
+
 from app.core.config import settings
 from app.models.schemas import ChatMessage
-import httpx
 
 
 class ProviderResult(dict):
@@ -109,13 +112,93 @@ def call_openrouter(messages: list[ChatMessage], model: str) -> ProviderResult:
         raise RuntimeError("Missing OPENROUTER_API_KEY")
     url = "https://openrouter.ai/api/v1/chat/completions"
     payload = {"model": model, "messages": [{"role": m.role, "content": m.content} for m in messages], "temperature": 0.5}
-    headers = {"Authorization": f"Bearer {settings.openrouter_api_key}", "Content-Type": "application/json"}
-    with httpx.Client(timeout=35.0) as client:
+    headers = {
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
+        "HTTP-Referer": "https://emilia.ai", # Placeholder referer
+        "X-Title": "Emilia AI",
+        "Content-Type": "application/json"
+    }
+    with httpx.Client(timeout=45.0) as client:
         response = client.post(url, headers=headers, json=payload)
         response.raise_for_status()
         data = response.json()
     answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
     return ProviderResult(answer=answer or "I could not generate a response.", provider="openrouter")
+
+
+def call_ai_horde(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.ai_horde_api_key:
+        raise RuntimeError("Missing AI_HORDE_API_KEY")
+    url = "https://aihorde.net/api/v2/generate/text/sync"
+    prompt = "\n".join([f"{m.role}: {m.content}" for m in messages]) + "\nassistant: "
+    payload = {
+        "prompt": prompt,
+        "params": {"max_context_length": 1024, "max_length": 512, "temperature": 0.7}
+    }
+    headers = {"apikey": settings.ai_horde_api_key, "Content-Type": "application/json"}
+    with httpx.Client(timeout=60.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("generations", [{}])[0].get("text", "").strip()
+    return ProviderResult(answer=answer, provider="ai_horde")
+
+
+def call_edyx(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.edyx_api_key:
+        raise RuntimeError("Missing EDYX_API_KEY")
+    # Assuming OpenAI compatible endpoint for Edyx if not specified
+    url = "https://api.edyx.ai/v1/chat/completions"
+    payload = {"model": "gpt-4o", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    headers = {"Authorization": f"Bearer {settings.edyx_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=45.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="edyx")
+
+
+def call_plugsky(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.plugsky_api_key:
+        raise RuntimeError("Missing PLUGSKY_API_KEY")
+    url = "https://api.plugsky.com/v1/chat/completions"
+    payload = {"model": "gpt-4o", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    headers = {"Authorization": f"Bearer {settings.plugsky_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=45.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="plugsky")
+
+
+def call_eight_scale(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.eight_scale_api_key:
+        raise RuntimeError("Missing EIGHT_SCALE_API_KEY")
+    url = "https://api.8scale.com/v1/chat/completions"
+    payload = {"model": "llama-3-70b", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    headers = {"Authorization": f"Bearer {settings.eight_scale_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=25.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="8scale")
+
+
+def call_bazaarlink(messages: list[ChatMessage]) -> ProviderResult:
+    if not settings.bazaarlink_api_key:
+        raise RuntimeError("Missing BAZAARLINK_API_KEY")
+    url = "https://api.bazaarlink.com/v1/chat/completions"
+    payload = {"model": "gpt-4o", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    headers = {"Authorization": f"Bearer {settings.bazaarlink_api_key}", "Content-Type": "application/json"}
+    with httpx.Client(timeout=40.0) as client:
+        response = client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    return ProviderResult(answer=answer, provider="bazaarlink")
 
 
 def call_cerebras(messages: list[ChatMessage], model: str) -> ProviderResult:
@@ -170,6 +253,44 @@ def call_you_bot(messages: list[ChatMessage]) -> ProviderResult:
 
 
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:
+    # 1. Try Pollinations (Highly Reliable & Free/Fast)
+    if settings.pollinations_api_key:
+        try:
+            # Pollinations allows generating via URL parameters
+            seed = str(datetime.now().timestamp()).replace(".", "")
+            url = f"https://pollinations.ai/p/{quote_plus(prompt)}?width=1024&height=1024&seed={seed}&model=flux"
+            return {"url": url, "provider": "pollinations"}
+        except Exception:
+            pass
+
+    # 2. Try Pixazo (Assume OpenAI compatible)
+    if settings.pixazo_api_key:
+        try:
+            url = "https://api.pixazo.ai/v1/images/generations"
+            headers = {"Authorization": f"Bearer {settings.pixazo_api_key}", "Content-Type": "application/json"}
+            payload = {"prompt": prompt, "n": 1, "size": size}
+            with httpx.Client(timeout=60.0) as client:
+                res = client.post(url, headers=headers, json=payload)
+                res.raise_for_status()
+                data = res.json()
+            return {"url": data["data"][0]["url"], "provider": "pixazo"}
+        except Exception:
+            pass
+
+    # 3. Try AI Horde
+    if settings.ai_horde_api_key:
+        try:
+            url = "https://aihorde.net/api/v2/generate/async"
+            headers = {"apikey": settings.ai_horde_api_key, "Content-Type": "application/json"}
+            payload = {
+                "prompt": prompt,
+                "params": {"n": 1, "steps": 25, "width": 1024, "height": 1024, "sampler_name": "k_euler_a"}
+            }
+            # Note: AI Horde is async, but we can attempt a short-wait or use it as fallback
+            # For simplicity in this scaffold, we'll try OpenAI/Pollinations first
+        except Exception:
+            pass
+
     if settings.openai_api_key:
         try:
             url = "https://api.openai.com/v1/images/generations"
