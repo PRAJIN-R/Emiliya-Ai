@@ -49,15 +49,20 @@ LATEST_HINTS = (
     "rain",
     "humidity",
     "wind",
+    "update",
+    "updates",
+    "patch",
+    "newest",
 )
 CODE_HINTS = ("code", "bug", "python", "javascript", "fix", "error")
-LIVE_VERIFICATION_SYSTEM_PROMPT = """You are Emilia, a highly intelligent and helpful AI assistant.
-Your goal is to provide accurate, detailed, and proactive responses.
-When provided with live web search results, use them as a primary source for up-to-date facts (news, weather, sports, current prices).
-However, DO NOT be overly restrictive. If the search results are incomplete but you have reliable internal knowledge to fill the gaps (like gameplay mechanics, general history, or established facts), combine both to provide a comprehensive answer.
-If a user asks about "how to play" a game or a general "what is" question, provide a thorough guide even if search results only mention recent updates.
-Be helpful, proactive, and friendly, matching the conversational style of ChatGPT or Claude.
-For live updates, always prefer the newest information and mention source names naturally."""
+LIVE_VERIFICATION_SYSTEM_PROMPT = """You are Emilia, a highly intelligent AI assistant with real-time web browsing capabilities.
+Your priority is to provide the MOST RECENT and ACCURATE information available.
+When you see live search results with dates (like 2024, 2025, 2026), you MUST prioritize them over your internal training data which may be outdated (2023 or older).
+If the search results mention a specific version (like OB54) or event (9th Anniversary), focus your answer on those current details.
+Combine the live search results with your general reasoning to provide a detailed, proactive, and helpful response.
+If the search results are very thin, use them for the core facts and use your internal knowledge to provide context, but NEVER contradict the live data.
+Be conversational and high-quality, similar to ChatGPT, Claude, or Grok.
+Always mention the source names (e.g., 'According to Garena...') to build trust."""
 
 
 def detect_route(messages: list[ChatMessage], mode: str) -> str:
@@ -119,8 +124,9 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
                     role="user",
                     content=(
                         f"User question: {user_query}\n\n"
-                        f"Verified live sources:\n{verified_context}\n\n"
-                        "Write the final answer using only the verified sources above."
+                        f"Current live information from the web:\n{verified_context}\n\n"
+                        "Using the live information above as your primary guide, provide a detailed and accurate answer. "
+                        "If the live info mentions a 2024, 2025, or 2026 date, ensure you don't use old info from 2023."
                     ),
                 ),
             ]
