@@ -27,6 +27,15 @@ interface SpeechRecognitionEvent extends Event {
 }
 
 // Icons
+function IconVideo({ className }: { className?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconBrand() {
   return (
     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-black">
@@ -652,15 +661,26 @@ function RecentChatItem({
             <div className="my-1 border-t border-white/5" />
 
             {/* Bottom Group */}
-            <button
-              onClick={(e) => { e.stopPropagation(); setOpenOptionsId(null); }}
-              className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[14px] hover:bg-white/5 text-white/90 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <IconFolder className="text-white/40" /> Move to project
+            <div className="relative group/projects">
+              <button
+                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 hover:bg-white/5 text-white/90 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <IconFolder className="text-white/40" /> Move to project
+                </div>
+                <IconChevronDown className="w-4 h-4 -rotate-90 text-white/20" />
+              </button>
+
+              {/* Nested Project Submenu */}
+              <div className="absolute left-[calc(100%+8px)] bottom-0 w-[180px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl opacity-0 group-hover/projects:opacity-100 pointer-events-none group-hover/projects:pointer-events-auto transition-opacity z-[300]">
+                 <p className="px-3 py-1.5 text-[11px] font-bold text-white/30 uppercase tracking-widest">Select Project</p>
+                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Default Project</button>
+                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Personal</button>
+                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Work</button>
+                 <div className="my-1 border-t border-white/5" />
+                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] font-bold text-blue-400">+ New project</button>
               </div>
-              <IconChevronDown className="w-4 h-4 -rotate-90 text-white/20" />
-            </button>
+            </div>
           </div>
         </>
       )}
@@ -1082,7 +1102,10 @@ function Sidebar({
           ? []
           : [
               { label: "Search chats", icon: <IconSearch /> },
+              { label: "Library", icon: <IconBook /> },
               { label: "Images", icon: <IconImage /> },
+              { label: "Projects", icon: <IconFolder /> },
+              { label: "Plugins", icon: <IconApps /> },
             ]
         ).map((item) => (
           <button
@@ -1517,6 +1540,14 @@ function InputBar({
                   {webSearchOn && <span className="text-blue-400 text-xs">✓</span>}
                 </div>
                 <p className="pl-8 text-[11px] opacity-60 font-normal">Find real-time news and info</p>
+              </button>
+              <button
+                className="flex w-full flex-col rounded-xl px-3 py-2 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3 text-[14px] font-medium text-white/90">
+                  <IconVideo /> Create video
+                </div>
+                <p className="pl-8 text-[11px] text-white/40 font-normal">Generate with AI</p>
               </button>
               <button
                 className="flex w-full flex-col rounded-xl px-3 py-2 hover:bg-white/5 transition-colors"

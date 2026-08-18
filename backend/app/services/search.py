@@ -71,6 +71,23 @@ WEATHER_HINTS = (
     "tomorrow weather",
 )
 
+SHOPPING_HINTS = (
+    "buy",
+    "price",
+    "store",
+    "official",
+    "website",
+    "brand",
+    "product",
+    "shop",
+    "purchase",
+    "online",
+    "deals",
+    "discount",
+    "sale",
+    "review",
+)
+
 STOPWORDS = {
     "the",
     "a",
@@ -274,6 +291,13 @@ def _normalize_live_query(query: str) -> str:
                 additions.append(token)
         if additions:
             cleaned = f"{cleaned} {' '.join(additions)}"
+    elif any(word in lower for word in SHOPPING_HINTS):
+        additions = []
+        for token in ("official website", "price", "buy"):
+            if token not in lower:
+                additions.append(token)
+        if additions:
+            cleaned = f"{cleaned} {' '.join(additions)}"
     return cleaned
 
 
@@ -294,6 +318,12 @@ def _search_task_order(query: str, limit: int):
             ("you", lambda: _you_search(query, limit)),
             ("tavily", lambda: _tavily_search(query, limit)),
             ("google_cse", lambda: _google_search(query, limit)),
+        ]
+    if any(word in query.lower() for word in SHOPPING_HINTS):
+        return [
+            ("you", lambda: _you_search(query, limit)),
+            ("google_cse", lambda: _google_search(query, limit)),
+            ("tavily", lambda: _tavily_search(query, limit)),
         ]
     return [
         ("google_cse", lambda: _google_search(query, limit)),
