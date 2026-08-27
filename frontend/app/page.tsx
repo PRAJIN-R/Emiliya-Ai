@@ -1426,6 +1426,8 @@ function InputBar({
   onPickImage,
   webSearchOn,
   setWebSearchOn,
+  deepResearchOn,
+  setDeepResearchOn,
   isAuthenticated,
   onAuthClick,
   hasMessages,
@@ -1453,6 +1455,8 @@ function InputBar({
   onPickImage: () => void;
   webSearchOn: boolean;
   setWebSearchOn: (v: boolean) => void;
+  deepResearchOn?: boolean;
+  setDeepResearchOn?: (v: boolean) => void;
   isAuthenticated: boolean;
   onAuthClick: () => void;
   hasMessages: boolean;
@@ -1550,12 +1554,20 @@ function InputBar({
                 <p className="pl-8 text-[11px] text-white/40 font-normal">Generate with AI</p>
               </button>
               <button
-                className="flex w-full flex-col rounded-xl px-3 py-2 hover:bg-white/5 transition-colors"
+                onClick={() => {
+                  if (setDeepResearchOn) setDeepResearchOn(!deepResearchOn);
+                  if (setWebSearchOn) setWebSearchOn(false);
+                  setToolsOpen(false);
+                }}
+                className={`flex w-full flex-col rounded-xl px-3 py-2 transition-colors ${deepResearchOn ? 'bg-purple-500/5 text-purple-400' : 'hover:bg-white/5 text-white/90'}`}
               >
-                <div className="flex items-center gap-3 text-[14px] font-medium text-white/90">
-                  <IconSearch /> Deep research
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-[14px] font-medium">
+                    <IconSearch /> Deep research
+                  </div>
+                  {deepResearchOn && <span className="text-purple-400 text-xs">✓</span>}
                 </div>
-                <p className="pl-8 text-[11px] text-white/40 font-normal">Get a detailed report</p>
+                <p className="pl-8 text-[11px] opacity-60 font-normal">Get a detailed, comprehensive report</p>
               </button>
             </div>
           )}
@@ -1626,9 +1638,11 @@ function InputBar({
                 ))}
               </div>
             )}
-            {webSearchOn && (
+            {(webSearchOn || deepResearchOn) && (
               <div className="px-12 pt-1 pb-0.5">
-                <span className="text-[12px] font-semibold text-white/30 uppercase tracking-tight">Search the web</span>
+                <span className={`text-[12px] font-semibold uppercase tracking-tight ${deepResearchOn ? 'text-purple-400' : 'text-white/30'}`}>
+                  {deepResearchOn ? 'Deep research' : 'Search the web'}
+                </span>
               </div>
             )}
             <div className="flex items-center gap-2">
@@ -1636,13 +1650,23 @@ function InputBar({
                 <IconPlus />
               </button>
 
-              {webSearchOn && (
+              {webSearchOn && !deepResearchOn && (
                 <button
                   onClick={() => setWebSearchOn(false)}
                   className="flex items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-1 text-white hover:bg-blue-700 transition-colors shrink-0 shadow-sm"
                 >
                   <IconGlobe />
                   <span className="text-[13px] font-bold">Search</span>
+                </button>
+              )}
+
+              {deepResearchOn && (
+                <button
+                  onClick={() => setDeepResearchOn && setDeepResearchOn(false)}
+                  className="flex items-center gap-1.5 rounded-full bg-purple-600 px-2.5 py-1 text-white hover:bg-purple-700 transition-colors shrink-0 shadow-sm"
+                >
+                  <IconSearch />
+                  <span className="text-[13px] font-bold">Research</span>
                 </button>
               )}
 
@@ -1655,7 +1679,7 @@ function InputBar({
                      sendMessage();
                    }
                 }}
-                placeholder={isTemporary ? "Temporary chat" : webSearchOn ? "Search the web" : "Ask anything"}
+                placeholder={deepResearchOn ? "Deep research a topic" : isTemporary ? "Temporary chat" : webSearchOn ? "Search the web" : "Ask anything"}
                 className="flex-1 bg-transparent py-2 text-[15px] text-[#ececec] outline-none placeholder:text-white/30"
               />
               <div className="flex items-center gap-1.5 shrink-0 pr-1">
@@ -1725,6 +1749,7 @@ export default function Page() {
   const [open, setOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [webSearchOn, setWebSearchOn] = useState(false);
+  const [deepResearchOn, setDeepResearchOn] = useState(false);
   const [listening, setListening] = useState(false);
   const [draftTranscript, setDraftTranscript] = useState("");
   const [audioLevel, setAudioLevel] = useState(0);
@@ -2102,7 +2127,7 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: currentMessages.map((m) => ({ role: m.role, content: m.content })),
-          mode: webSearchOn ? "search" : "auto",
+          mode: deepResearchOn ? "research" : webSearchOn ? "search" : "auto",
           user_id: authUser?.id
         }),
       });
@@ -2185,7 +2210,7 @@ export default function Page() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
-          mode: webSearchOn ? "search" : "auto",
+          mode: deepResearchOn ? "research" : webSearchOn ? "search" : "auto",
           user_id: authUser?.id
         }),
       });
@@ -3020,6 +3045,8 @@ export default function Page() {
                       onPickImage={pickImage}
                       webSearchOn={webSearchOn}
                       setWebSearchOn={setWebSearchOn}
+                      deepResearchOn={deepResearchOn}
+                      setDeepResearchOn={setDeepResearchOn}
                       isAuthenticated={!!session}
                       onAuthClick={openAuth}
                       hasMessages={messages.length > 0}
@@ -3186,6 +3213,8 @@ export default function Page() {
                   onPickImage={pickImage}
                   webSearchOn={webSearchOn}
                   setWebSearchOn={setWebSearchOn}
+                  deepResearchOn={deepResearchOn}
+                  setDeepResearchOn={setDeepResearchOn}
                   isAuthenticated={!!session}
                   onAuthClick={openAuth}
                   hasMessages={messages.length > 0}

@@ -57,11 +57,13 @@ LATEST_HINTS = (
 CODE_HINTS = ("code", "bug", "python", "javascript", "fix", "error")
 LIVE_VERIFICATION_SYSTEM_PROMPT = """You are Emilia, a highly intelligent AI assistant with real-time web browsing capabilities.
 Your goal is to provide the most accurate, detailed, and up-to-date information available.
+When you see live search results with dates (like 2024, 2025, 2026), you MUST prioritize them over your internal training data.
+If the search results mention a specific version (like OB54) or event (9th Anniversary), focus your answer on those current details.
 For Shopping, Brand, or Product queries: Proactively search for and provide verified official website links. Ensure the user can easily find where to buy or learn more about the brand/product.
-For News/Updates: Prioritize 2024-2026 data. Mention source names and dates clearly.
 Always prefer official sources. If you find a direct link to a product or company, include it in your response using markdown [Title](URL).
+Combine the live search results with your general reasoning to provide a detailed, proactive, and helpful response.
 Be conversational and professional, matching the standard of top-tier assistants like ChatGPT, Gemini, and Grok.
-If search results are thin, use your internal knowledge to provide helpful context, but never contradict verified live facts."""
+Always mention the source names (e.g., 'According to Garena...') to build trust."""
 
 
 def detect_route(messages: list[ChatMessage], mode: str) -> str:
@@ -92,7 +94,41 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
 
     result = {}
 
-    if route == "coding":
+    if route == "research":
+        user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
+        # Deep research: Search more sources with higher limit
+        web_results = search_web(user_query, limit=15)
+        if web_results:
+            verified_context = web_results_to_context(web_results)
+            summary_messages = [
+                ChatMessage(role="system", content="""You are Emilia in Deep Research Mode.
+Your goal is to provide a comprehensive, multi-perspective report based on the provided live sources.
+Synthesize the information into clear sections: Overview, Key Findings, Details, and Sources.
+Be extremely thorough and cite your sources by name."""),
+                ChatMessage(
+                    role="user",
+                    content=f"Perform deep research on: {user_query}\n\nSources:\n{verified_context}"
+                ),
+            ]
+            candidates = []
+            if settings.gemini_api_key:
+                candidates.append(("gemini", lambda: call_gemini(summary_messages, settings.gemini_model)))
+            if settings.groq_api_key:
+                candidates.append(("groq", lambda: call_groq(summary_messages, settings.groq_model)))
+            if settings.mistral_api_key:
+                candidates.append(("mistral", lambda: call_mistral(summary_messages, settings.mistral_model)))
+            summary_result = _run_candidates(candidates, summary_messages)
+            if summary_result and summary_result.get("answer"):
+                result = {
+                    "route": "research",
+                    "answer": summary_result["answer"],
+                    "provider": summary_result.get("provider", "local"),
+                    "fallback_used": bool(summary_result.get("fallback_used")),
+                    "provider_errors": summary_result.get("provider_errors", []),
+                    "verified_sources": web_results,
+                }
+
+    if not result and route == "coding":
         candidates = []
         if settings.cerebras_api_key:
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
