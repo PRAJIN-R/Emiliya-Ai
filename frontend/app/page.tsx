@@ -377,9 +377,17 @@ type UiMessage = {
   route?: string;
   sourceName?: string;
   freshness?: string;
+  verified_sources?: any[];
 };
-type ChatThread = { id: string; title: string; messages: UiMessage[]; updatedAt: number };
-type RecentItem = { id: string; title: string };
+type ChatThread = {
+  id: string;
+  title: string;
+  messages: UiMessage[];
+  updatedAt: number;
+  projectId?: string;
+};
+type Project = { id: string; name: string };
+type RecentItem = { id: string; title: string; projectId?: string };
 type ProviderHealth = {
   keys_loaded: Record<string, boolean>;
   provider_priority: string[];
@@ -566,6 +574,8 @@ function RecentChatItem({
   onRenameRecent?: (id: string) => void;
   onArchiveRecent?: (id: string) => void;
   onDeleteRecent?: (id: string) => void;
+  onMoveToProject?: (chatId: string, projectId: string) => void;
+  projects?: Project[];
   openOptionsId: string | null;
   setOpenOptionsId: (id: string | null) => void;
 }) {
@@ -674,11 +684,18 @@ function RecentChatItem({
               {/* Nested Project Submenu */}
               <div className="absolute left-[calc(100%+8px)] bottom-0 w-[180px] rounded-[24px] bg-[#232323] border border-white/10 p-2 shadow-2xl opacity-0 group-hover/projects:opacity-100 pointer-events-none group-hover/projects:pointer-events-auto transition-opacity z-[300]">
                  <p className="px-3 py-1.5 text-[11px] font-bold text-white/30 uppercase tracking-widest">Select Project</p>
-                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Default Project</button>
-                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Personal</button>
-                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors">Work</button>
+                 {projects?.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={(e) => { e.stopPropagation(); onMoveToProject?.(item.id, p.id); setOpenOptionsId(null); }}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] transition-colors text-left"
+                    >
+                      <span className="truncate flex-1">{p.name}</span>
+                      {item.projectId === p.id && <IconCheck className="w-3 h-3 text-blue-400 shrink-0" />}
+                    </button>
+                 ))}
                  <div className="my-1 border-t border-white/5" />
-                 <button onClick={() => setOpenOptionsId(null)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] font-bold text-blue-400">+ New project</button>
+                 <button onClick={(e) => { e.stopPropagation(); setOpenOptionsId(null); }} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 hover:bg-white/5 text-[13.5px] font-bold text-blue-400">+ New project</button>
               </div>
             </div>
           </div>
@@ -1026,6 +1043,10 @@ function Sidebar({
   pinnedChatIds?: string[];
   onTogglePin?: (id: string) => void;
   onArchiveRecent?: (id: string) => void;
+  onMoveToProject?: (chatId: string, projectId: string) => void;
+  projects?: Project[];
+  activeSidebarTab?: string;
+  setActiveSidebarTab?: (tab: string) => void;
   onUpgradeClick?: () => void;
   onOpenSettings?: () => void;
 }) {
@@ -1110,14 +1131,39 @@ function Sidebar({
         ).map((item) => (
           <button
             key={item.label}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] ${compact ? "justify-center" : ""}`}
+            onClick={() => setActiveSidebarTab?.(item.label)}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-medium transition hover:bg-white/[0.08] ${compact ? "justify-center" : ""} ${activeSidebarTab === item.label ? 'bg-white/10 text-white' : 'text-white/60'}`}
           >
             {item.icon}
             {!compact && <span>{item.label}</span>}
           </button>
         ))}
 
-        {!compact && isAuthenticated && recentItems.length > 0 && (
+        {activeSidebarTab === "Projects" && !compact && isAuthenticated && (
+          <div className="pt-4 px-1 space-y-4">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <p className="text-[11px] font-bold text-white/30 uppercase tracking-[0.1em]">My Projects</p>
+              <button className="text-white/40 hover:text-white transition-colors"><IconPlus className="w-3 h-3"/></button>
+            </div>
+            {projects?.map(p => (
+              <div key={p.id} className="space-y-1">
+                <button className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left text-[14px] text-white/80 hover:bg-white/5 transition-all group">
+                   <IconFolder className="w-4 h-4 text-white/30 group-hover:text-blue-400" />
+                   <span className="font-medium truncate">{p.name}</span>
+                </button>
+                <div className="pl-7 space-y-0.5 border-l border-white/5 ml-4">
+                  {recentItems.filter(i => i.projectId === p.id).slice(0, 3).map(item => (
+                    <button key={item.id} onClick={() => onOpenRecent?.(item.id)} className="flex w-full text-left text-[12px] text-white/40 hover:text-white/80 truncate py-1 transition-colors">
+                      {item.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeSidebarTab !== "Projects" && !compact && isAuthenticated && recentItems.length > 0 && (
           <div className="pt-4 pb-2">
             {pinnedChatIds.length > 0 && (
               <div className="mb-4">
@@ -1799,9 +1845,15 @@ export default function Page() {
   const [recentTitles, setRecentTitles] = useState<string[]>([]);
   const [pinnedChatIds, setPinnedChatIds] = useState<string[]>([]);
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [projects, setProjects] = useState<Project[]>([
+    { id: "p_default", name: "Default Project" },
+    { id: "p_personal", name: "Personal" },
+    { id: "p_work", name: "Work" },
+  ]);
   const [editingMessageIdx, setEditingMessageIdx] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<string>("Search chats");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -1969,6 +2021,14 @@ export default function Page() {
       setActiveThreadId(null);
       setMessages([]);
     }
+  };
+
+  const onMoveToProject = (chatId: string, projectId: string) => {
+    setThreads(prev => {
+      const next = prev.map(t => t.id === chatId ? { ...t, projectId, updatedAt: Date.now() } : t);
+      saveThreads(next);
+      return next;
+    });
   };
 
   const parseErrorText = async (response: Response) => {
@@ -2193,11 +2253,13 @@ export default function Page() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || chatLoading) return;
+    if ((!text && imagePreviews.length === 0) || chatLoading) return;
     const outgoing: UiMessage = { role: "user", content: text };
     const nextMessages = [...messages, outgoing];
     setMessages(nextMessages);
-    setComposerInput("");
+    const currentImages = [...imagePreviews];
+    setInput("");
+    setImagePreviews([]);
     setChatLoading(true);
     setChatAlert(null);
     saveRecentIfAuthed(buildTitleFromText(text));
@@ -2205,13 +2267,18 @@ export default function Page() {
     let failedStatus: number | null = null;
     try {
       const apiBase = apiBaseUrl();
+      const imagesBase64 = currentImages.length > 0
+        ? await Promise.all(currentImages.map(url => blobToBase64(url)))
+        : undefined;
+
       const res = await fetch(`${apiBase}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
           mode: deepResearchOn ? "research" : webSearchOn ? "search" : "auto",
-          user_id: authUser?.id
+          user_id: authUser?.id,
+          images: imagesBase64
         }),
       });
       if (!res.ok) {
@@ -2231,7 +2298,15 @@ export default function Page() {
       const sourceName = typeof data.source_name === "string" ? data.source_name : undefined;
       const freshness = typeof data.freshness === "string" ? data.freshness : undefined;
       setMessages((prev) => {
-        const merged = [...prev, { role: "assistant", content: reply, provider, route, sourceName, freshness } as UiMessage];
+        const merged = [...prev, {
+          role: "assistant",
+          content: reply,
+          provider,
+          route,
+          sourceName,
+          freshness,
+          verified_sources: data.verified_sources
+        } as UiMessage];
         upsertThread(buildTitleFromText(text), merged);
         return merged;
       });
@@ -2505,6 +2580,17 @@ export default function Page() {
   }, [authUser]);
 
   const pickImage = () => fileInputRef.current?.click();
+
+  const blobToBase64 = async (blobUrl: string): Promise<string> => {
+    const response = await fetch(blobUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2957,13 +3043,47 @@ export default function Page() {
           pinnedChatIds={pinnedChatIds}
           onTogglePin={onTogglePin}
           onArchiveRecent={onArchiveRecent}
+          onMoveToProject={onMoveToProject}
+          projects={projects}
+          activeSidebarTab={activeSidebarTab}
+          setActiveSidebarTab={setActiveSidebarTab}
           onUpgradeClick={() => setUpgradeModalOpen(true)}
           onOpenSettings={() => setSettingsModalOpen(true)}
         />
       </aside>
 
       <aside className="hidden h-screen w-[92px] border-r border-neutral-800 bg-black md:flex md:flex-col lg:hidden">
-        <Sidebar compact sidebarCollapsed hasRecents={hasRecents} compactGuestMenuOpen={compactGuestMenuOpen} onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)} onOpenEditProfile={() => setEditProfileOpen(true)} accountSwitchOpen={accountSwitchOpen} onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)} onAuthClick={openAuth} onSignOut={signOut} isAuthenticated={!!session} userEmail={authUser?.email} userName={displayName} savedAccounts={savedAccounts} activeAccountId={authUser?.id} onSwitchAccount={startAccountSwitch} onAddAccount={openAuth} recentItems={recentItems} onNewChat={createNewChat} onOpenRecent={openRecentById} onRenameRecent={renameRecentById} onDeleteRecent={deleteRecentById} pinnedChatIds={pinnedChatIds} onTogglePin={onTogglePin} onArchiveRecent={onArchiveRecent} onUpgradeClick={() => setUpgradeModalOpen(true)} onOpenSettings={() => setSettingsModalOpen(true)} />
+        <Sidebar
+          compact
+          sidebarCollapsed
+          hasRecents={hasRecents}
+          compactGuestMenuOpen={compactGuestMenuOpen}
+          onToggleCompactGuestMenu={() => setCompactGuestMenuOpen((v) => !v)}
+          onOpenEditProfile={() => setEditProfileOpen(true)}
+          accountSwitchOpen={accountSwitchOpen}
+          onToggleAccountSwitch={() => setAccountSwitchOpen((v) => !v)}
+          onAuthClick={openAuth}
+          onSignOut={signOut}
+          isAuthenticated={!!session}
+          userEmail={authUser?.email}
+          userName={displayName}
+          savedAccounts={savedAccounts}
+          activeAccountId={authUser?.id}
+          onSwitchAccount={startAccountSwitch}
+          onAddAccount={openAuth}
+          recentItems={recentItems}
+          onNewChat={createNewChat}
+          onOpenRecent={openRecentById}
+          onRenameRecent={renameRecentById}
+          onDeleteRecent={deleteRecentById}
+          pinnedChatIds={pinnedChatIds}
+          onTogglePin={onTogglePin}
+          onArchiveRecent={onArchiveRecent}
+          onMoveToProject={onMoveToProject}
+          projects={projects}
+          onUpgradeClick={() => setUpgradeModalOpen(true)}
+          onOpenSettings={() => setSettingsModalOpen(true)}
+        />
       </aside>
 
       <section className="app-main relative min-w-0 flex-1 flex flex-col bg-[#0c0d10] transition-all duration-200 h-screen overflow-hidden">
@@ -3140,6 +3260,25 @@ export default function Page() {
                                 />
                               ) : m.content}
                             </div>
+
+                            {/* Sources / Grounding Chips */}
+                            {m.role === "assistant" && m.verified_sources && m.verified_sources.length > 0 && (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {m.verified_sources.slice(0, 4).map((source, sIdx) => (
+                                  <button
+                                    key={sIdx}
+                                    onClick={() => {
+                                      setPendingLinkUrl(source.url);
+                                      setExternalLinkModalOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[12px] text-white/60 hover:bg-white/10 transition-all"
+                                  >
+                                    <span className="max-w-[120px] truncate">{source.title || source.source}</span>
+                                    <IconExternal className="w-3 h-3 opacity-40" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             {m.content.trim() && (
                               <div className="mt-4 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                  <button
@@ -3261,6 +3400,8 @@ export default function Page() {
               pinnedChatIds={pinnedChatIds}
               onTogglePin={onTogglePin}
               onArchiveRecent={onArchiveRecent}
+              onMoveToProject={onMoveToProject}
+              projects={projects}
               onUpgradeClick={() => { setUpgradeModalOpen(true); setOpen(false); }}
               onOpenSettings={() => { setSettingsModalOpen(true); setOpen(false); }}
             />

@@ -43,17 +43,39 @@ def _extract_text_choice(data: dict) -> str:
     )
 
 
-def call_gemini(messages: list[ChatMessage], model: str) -> ProviderResult:
+def call_gemini(messages: list[ChatMessage], model: str, images: list[str] | None = None) -> ProviderResult:
     if not settings.gemini_api_key:
         raise RuntimeError("Missing GEMINI_API_KEY")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": m.content}]} for m in messages if m.role in ("user", "assistant", "system")]
-    }
-    with httpx.Client(timeout=30.0) as client:
+    
+    # Use gemini-1.5-flash for vision if images are present
+    target_model = "gemini-1.5-flash" if images else model
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent"
+    
+    contents = []
+    for m in messages:
+        if m.role in ("user", "assistant"):
+            role = "user" if m.role == "user" else "model"
+            parts = [{"text": m.content}]
+            # Add images to the last user message if any
+            if m == messages[-1] and m.role == "user" and images:
+                for img_base64 in images:
+                    # Strip data:image/png;base64, prefix if present
+                    pure_b64 = img_base64.split(",")[-1] if "," in img_base64 else img_base64
+                    parts.append({
+                        "inline_data": {
+                            "mime_type": "image/jpeg",
+                            "data": pure_b64
+                        }
+                    })
+            contents.append({"role": role, "parts": parts})
+
+    payload = {"contents": contents}
+    
+    with httpx.Client(timeout=45.0) as client:
         response = client.post(url, params={"key": settings.gemini_api_key}, json=payload)
         response.raise_for_status()
         data = response.json()
+
     answer = _extract_text_choice(data)
     return ProviderResult(answer=answer or "I could not generate a response.", provider="gemini")
 

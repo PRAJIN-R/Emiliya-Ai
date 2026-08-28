@@ -39,7 +39,7 @@ def debug_providers(prompt: str = "hello") -> dict:
 @router.post("/chat", response_model=ChatResponse)
 def chat(payload: ChatRequest) -> ChatResponse:
     try:
-        result = run_router(payload.messages, payload.mode)
+        result = run_router(payload.messages, payload.mode, user_id=payload.user_id, images=payload.images)
     except Exception as exc:
         fallback = local_fallback_answer(payload.messages)
         result = {

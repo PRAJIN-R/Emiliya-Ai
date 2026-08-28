@@ -78,10 +78,14 @@ def detect_route(messages: list[ChatMessage], mode: str) -> str:
     return "chat"
 
 
-def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = None) -> dict:
+def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = None, images: list[str] | None = None) -> dict:
     route = detect_route(messages, mode)
 
-    # 0. Memory retrieval for personalized context
+    # 0. Multimodal Override: If images are present, force Gemini Vision
+    if images:
+        return {"route": "vision", **_run_candidates([("gemini", lambda: call_gemini(messages, settings.gemini_model, images))], messages)}
+
+    # 1. Memory retrieval for personalized context
     if user_id:
         user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
         long_term_memory = retrieve_memory(user_id, user_query)
@@ -93,6 +97,7 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
             ]
 
     result = {}
+    candidates = []
 
     if route == "research":
         user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")

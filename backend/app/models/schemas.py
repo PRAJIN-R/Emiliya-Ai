@@ -10,6 +10,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     mode: str = "auto"
     user_id: str | None = None
+    images: list[str] | None = None
 
 
 class ChatResponse(BaseModel):
