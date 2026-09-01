@@ -1012,6 +1012,10 @@ function Sidebar({
   pinnedChatIds = [],
   onTogglePin,
   onArchiveRecent,
+  onMoveToProject,
+  projects = [],
+  activeSidebarTab = "Search chats",
+  setActiveSidebarTab,
   onUpgradeClick,
   onOpenSettings,
 }: {
@@ -3081,6 +3085,8 @@ export default function Page() {
           onArchiveRecent={onArchiveRecent}
           onMoveToProject={onMoveToProject}
           projects={projects}
+          activeSidebarTab={activeSidebarTab}
+          setActiveSidebarTab={setActiveSidebarTab}
           onUpgradeClick={() => setUpgradeModalOpen(true)}
           onOpenSettings={() => setSettingsModalOpen(true)}
         />
@@ -3402,6 +3408,8 @@ export default function Page() {
               onArchiveRecent={onArchiveRecent}
               onMoveToProject={onMoveToProject}
               projects={projects}
+              activeSidebarTab={activeSidebarTab}
+              setActiveSidebarTab={setActiveSidebarTab}
               onUpgradeClick={() => { setUpgradeModalOpen(true); setOpen(false); }}
               onOpenSettings={() => { setSettingsModalOpen(true); setOpen(false); }}
             />
