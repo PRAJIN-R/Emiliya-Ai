@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     cathedral_api_key: str = ""
     audaxic_api_key: str = ""
     langchain_api_key: str = ""
+    
+    mongodb_uri: str = ""
+    mongodb_db_name: str = "emiliya_ai"
+
     email_from: str = "no-reply@example.com"
     email_sender_name: str = "Emilia"
 

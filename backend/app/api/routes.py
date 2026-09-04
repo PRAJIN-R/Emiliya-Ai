@@ -9,6 +9,7 @@ from app.services.providers import generate_image, local_fallback_answer
 from app.services.email import send_welcome_back_email, send_welcome_email
 from app.core.config import settings
 from app.services.search import is_news_query, is_weather_query, search_web
+from app.services.db_service import save_chat_thread, get_user_threads, delete_chat_thread
 
 router = APIRouter()
 
@@ -191,3 +192,25 @@ def auth_post_login(payload: AuthEmailEventRequest) -> dict[str, str]:
         return {"status": "sent"}
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to send welcome-back email: {exc}") from exc
+
+# MongoDB Thread Routes
+@router.get("/threads/{user_id}")
+async def fetch_threads(user_id: str):
+    return await get_user_threads(user_id)
+
+@router.post("/threads/save")
+async def save_thread(payload: dict):
+    # Expected payload: {user_id, thread_id, title, messages, projectId}
+    await save_chat_thread(
+        payload["user_id"],
+        payload["thread_id"],
+        payload["title"],
+        [ChatMessage(role=m["role"], content=m["content"]) for m in payload["messages"]],
+        payload.get("projectId", "p_default")
+    )
+    return {"status": "saved"}
+
+@router.delete("/threads/{user_id}/{thread_id}")
+async def remove_thread(user_id: str, thread_id: str):
+    await delete_chat_thread(user_id, thread_id)
+    return {"status": "deleted"}

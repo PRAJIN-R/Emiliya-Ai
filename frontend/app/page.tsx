@@ -2069,6 +2069,22 @@ export default function Page() {
   const saveThreads = (nextThreads: ChatThread[]) => {
     if (!session || !authUser?.id) return;
     localStorage.setItem(`emilia_chat_threads_${authUser.id}`, JSON.stringify(nextThreads));
+
+    // Sync to MongoDB
+    const active = nextThreads.find(t => t.id === activeThreadId) || nextThreads[0];
+    if (active) {
+      void fetch(`${apiBaseUrl()}/api/threads/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: authUser.id,
+          thread_id: active.id,
+          title: active.title,
+          messages: active.messages,
+          projectId: active.projectId
+        })
+      });
+    }
   };
 
   const upsertThread = (title: string, nextMessages: UiMessage[]) => {
@@ -2235,6 +2251,11 @@ export default function Page() {
     if (activeThreadId === id) {
       setActiveThreadId(null);
       setMessages([]);
+    }
+
+    // De-sync from MongoDB
+    if (session && authUser?.id) {
+       void fetch(`${apiBaseUrl()}/api/threads/${authUser.id}/${id}`, { method: "DELETE" });
     }
   };
 
@@ -2582,13 +2603,25 @@ export default function Page() {
   };
 
   useEffect(() => {
-    try {
-      if (session && authUser?.id) {
-        const threadRaw = localStorage.getItem(`emilia_chat_threads_${authUser.id}`);
-        if (threadRaw) {
-          const parsedThreads = JSON.parse(threadRaw);
-          if (Array.isArray(parsedThreads)) setThreads(parsedThreads);
-        } else setThreads([]);
+    const loadThreads = async () => {
+      try {
+        if (session && authUser?.id) {
+          // 1. Try local storage first for speed
+          const threadRaw = localStorage.getItem(`emilia_chat_threads_${authUser.id}`);
+          if (threadRaw) {
+            const parsedThreads = JSON.parse(threadRaw);
+            if (Array.isArray(parsedThreads)) setThreads(parsedThreads);
+          }
+
+          // 2. Fetch from MongoDB for multi-device sync
+          const res = await fetch(`${apiBaseUrl()}/api/threads/${authUser.id}`);
+          if (res.ok) {
+            const remoteThreads = await res.json();
+            if (Array.isArray(remoteThreads) && remoteThreads.length > 0) {
+              setThreads(remoteThreads);
+              localStorage.setItem(`emilia_chat_threads_${authUser.id}`, JSON.stringify(remoteThreads));
+            }
+          }
 
         const pinnedRaw = localStorage.getItem(`emilia_pinned_chats_${authUser.id}`);
         if (pinnedRaw) {
@@ -2596,25 +2629,26 @@ export default function Page() {
           if (Array.isArray(parsedPinned)) setPinnedChatIds(parsedPinned);
         }
 
-        const own = localStorage.getItem(`emilia_recent_chats_${authUser.id}`);
-        if (own) {
-          const parsedOwn = JSON.parse(own);
-          if (Array.isArray(parsedOwn)) {
-            setRecentTitles(parsedOwn);
-            setHasRecents(parsedOwn.length > 0);
-            return;
+          const own = localStorage.getItem(`emilia_recent_chats_${authUser.id}`);
+          if (own) {
+            const parsedOwn = JSON.parse(own);
+            if (Array.isArray(parsedOwn)) {
+              setRecentTitles(parsedOwn);
+              setHasRecents(parsedOwn.length > 0);
+            }
           }
+        } else {
+          // Guest mode
+          setThreads([]);
+          setPinnedChatIds([]);
+          setRecentTitles([]);
+          setHasRecents(false);
         }
-      } else {
-        // Guest mode: clear history from sidebar
-        setThreads([]);
-        setPinnedChatIds([]);
-        setRecentTitles([]);
-        setHasRecents(false);
+      } catch (err) {
+        console.error("Failed to load threads:", err);
       }
-    } catch {
-      setHasRecents(false);
-    }
+    };
+    void loadThreads();
   }, [session, authUser?.id]);
 
   useEffect(() => {
