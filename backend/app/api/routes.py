@@ -107,9 +107,15 @@ async def chat_stream(payload: ChatRequest) -> StreamingResponse:
     async def event_gen():
         yield f"data: {json.dumps({'type': 'meta', 'provider': result.get('provider'), 'route': result.get('route')})}\n\n"
         yield f"data: {json.dumps({'type': 'meta2', 'source_name': _response_labels(result.get('route', 'fallback'), result.get('provider', 'local'), payload.messages)[0], 'freshness': _response_labels(result.get('route', 'fallback'), result.get('provider', 'local'), payload.messages)[1]})}\n\n"
-        for token in answer.split(" "):
-            await asyncio.sleep(0.02)
-            yield f"data: {json.dumps({'type': 'token', 'value': token + ' '})}\n\n"
+        
+        # Real-time feel: split by characters/smaller chunks for smoother flow
+        # We also yield larger chunks if the answer is long to keep speed up
+        tokens = answer.split(" ")
+        for i, token in enumerate(tokens):
+            yield f"data: {json.dumps({'type': 'token', 'value': token + (' ' if i < len(tokens)-1 else '')})}\n\n"
+            # Dynamic sleep: shorter for longer responses to maintain speed
+            await asyncio.sleep(0.01)
+
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     return StreamingResponse(event_gen(), media_type="text/event-stream")

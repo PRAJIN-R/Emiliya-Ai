@@ -148,12 +148,12 @@ Be extremely thorough and cite your sources by name."""),
 
     if not result and route == "coding":
         candidates = []
-        if settings.anthropic_api_key:
-            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.cerebras_api_key:
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
             candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
+        if settings.anthropic_api_key:
+            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.xai_api_key:
             candidates.append(("xai", lambda: call_xai(messages, settings.xai_model)))
         if settings.gemini_api_key:
@@ -236,16 +236,14 @@ Be extremely thorough and cite your sources by name."""),
 
     if route == "chat" or not result:
         candidates = []
-        if settings.anthropic_api_key:
-            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
-        if settings.you_api_key:
-            candidates.append(("you_bot", lambda: call_you_bot(messages)))
-        if settings.eight_scale_api_key:
-            candidates.append(("8scale", lambda: call_eight_scale(messages)))
         if settings.cerebras_api_key:
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
             candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
+        if settings.anthropic_api_key:
+            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
+        if settings.you_api_key:
+            candidates.append(("you_bot", lambda: call_you_bot(messages)))
         if settings.edyx_api_key:
             candidates.append(("edyx", lambda: call_edyx(messages)))
         if settings.plugsky_api_key:

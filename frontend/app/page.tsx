@@ -2422,43 +2422,79 @@ export default function Page() {
     setChatAlert(null);
     const lastUserText = currentMessages[currentMessages.length - 1]?.content || "";
     saveRecentIfAuthed(buildTitleFromText(lastUserText));
-    upsertThread(buildTitleFromText(lastUserText), currentMessages);
+
+    let assistantReply = "";
+    let provider = "";
+    let route = "";
+    let sourceName = "";
+    let freshness = "";
 
     try {
-      const res = await fetch(`${apiBaseUrl()}/api/chat`, {
+      const res = await fetch(`${apiBaseUrl()}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: currentMessages.map((m) => ({ role: m.role, content: m.content })),
-          mode: deepResearchOn ? "research" : webSearchOn ? "search" : "auto",
+          mode: deepResearchOn ? "research" : webSearchOn ? "search" : (thinkModeActive ? "coding" : "auto"),
           user_id: authUser?.id
         }),
       });
+
       if (!res.ok) {
         const detail = await parseErrorText(res);
         throw new Error(detail || "Chat request failed");
       }
-      const data = await res.json();
-      const reply = data.answer || "I could not answer that yet.";
 
-      if (data.provider === "local" && data.provider_errors?.length > 0) {
-        setChatAlert(`Note: All AI providers failed. Falling back to local responses.`);
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+
+      const decoder = new TextDecoder();
+      let done = false;
+
+      // Add placeholder
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6).trim();
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.type === "meta") {
+                provider = data.provider;
+                route = data.route;
+              } else if (data.type === "meta2") {
+                sourceName = data.source_name;
+                freshness = data.freshness;
+              } else if (data.type === "token") {
+                assistantReply += data.value;
+                setMessages((prev) => {
+                  const last = prev[prev.length - 1];
+                  if (last && last.role === "assistant") {
+                    return [
+                      ...prev.slice(0, -1),
+                      { ...last, content: assistantReply, provider, route, sourceName, freshness }
+                    ];
+                  }
+                  return prev;
+                });
+              } else if (data.type === "done") {
+                done = true;
+              }
+            } catch (e) {}
+          }
+        }
       }
 
-      setMessages((prev) => {
-        const next = [...prev, {
-          role: "assistant",
-          content: reply,
-          provider: data.provider,
-          route: data.route,
-          sourceName: data.source_name,
-          freshness: data.freshness
-        }];
-        upsertThread(buildTitleFromText(lastUserText), next);
-        return next;
-      });
+      upsertThread(buildTitleFromText(lastUserText), [...currentMessages, { role: "assistant", content: assistantReply, provider, route, sourceName, freshness }]);
     } catch (err) {
       setChatAlert(err instanceof Error ? err.message : "Request failed.");
+      setMessages((prev) => (prev.length > 0 && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) ? prev.slice(0, -1) : prev);
     } finally {
       setChatLoading(false);
     }
@@ -2497,67 +2533,108 @@ export default function Page() {
   const sendMessage = async () => {
     const text = input.trim();
     if ((!text && imagePreviews.length === 0) || chatLoading) return;
+
     const outgoing: UiMessage = { role: "user", content: text };
     const nextMessages = [...messages, outgoing];
     setMessages(nextMessages);
+
     const currentImages = [...imagePreviews];
     setInput("");
     setImagePreviews([]);
     setChatLoading(true);
     setChatAlert(null);
     saveRecentIfAuthed(buildTitleFromText(text));
-    upsertThread(buildTitleFromText(text), nextMessages);
-    let failedStatus: number | null = null;
+
+    let assistantReply = "";
+    let provider = "";
+    let route = "";
+    let sourceName = "";
+    let freshness = "";
+
     try {
       const apiBase = apiBaseUrl();
       const imagesBase64 = currentImages.length > 0
         ? await Promise.all(currentImages.map(url => blobToBase64(url)))
         : undefined;
 
-      const res = await fetch(`${apiBase}/api/chat`, {
+      const res = await fetch(`${apiBase}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
-          mode: deepResearchOn ? "research" : webSearchOn ? "search" : "auto",
+          mode: deepResearchOn ? "research" : webSearchOn ? "search" : (thinkModeActive ? "coding" : "auto"),
           user_id: authUser?.id,
           images: imagesBase64
         }),
       });
+
       if (!res.ok) {
-        failedStatus = res.status;
         const detail = await parseErrorText(res);
         throw new Error(detail || "Chat request failed");
       }
-      const data = await res.json();
-      const reply = typeof data.answer === "string" && data.answer.trim() ? data.answer : "I could not answer that yet.";
-      const provider = typeof data.provider === "string" ? data.provider : undefined;
 
-      // If we got errors but still returned a fallback answer, inform the user
-      if (data.provider === "local" && data.provider_errors?.length > 0) {
-        setChatAlert(`Note: All AI providers failed. Falling back to local responses. Errors: ${data.provider_errors.join(", ")}`);
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+
+      const decoder = new TextDecoder();
+      let done = false;
+
+      // Add a placeholder assistant message that we will update
+      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === "[DONE]") break;
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.type === "meta") {
+                provider = data.provider;
+                route = data.route;
+              } else if (data.type === "meta2") {
+                sourceName = data.source_name;
+                freshness = data.freshness;
+              } else if (data.type === "token") {
+                assistantReply += data.value;
+                setMessages((prev) => {
+                  const last = prev[prev.length - 1];
+                  if (last && last.role === "assistant") {
+                    return [
+                      ...prev.slice(0, -1),
+                      { ...last, content: assistantReply, provider, route, sourceName, freshness }
+                    ];
+                  }
+                  return prev;
+                });
+              } else if (data.type === "done") {
+                done = true;
+              }
+            } catch (e) {
+              // Ignore parse errors for partial chunks
+            }
+          }
+        }
       }
-      const route = typeof data.route === "string" ? data.route : undefined;
-      const sourceName = typeof data.source_name === "string" ? data.source_name : undefined;
-      const freshness = typeof data.freshness === "string" ? data.freshness : undefined;
-      setMessages((prev) => {
-        const merged = [...prev, {
-          role: "assistant",
-          content: reply,
-          provider,
-          route,
-          sourceName,
-          freshness,
-          verified_sources: data.verified_sources
-        } as UiMessage];
-        upsertThread(buildTitleFromText(text), merged);
-        return merged;
-      });
+
+      // Final upsert to DB/Local after stream finishes
+      upsertThread(buildTitleFromText(text), [...nextMessages, { role: "assistant", content: assistantReply, provider, route, sourceName, freshness }]);
+
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      const detail = message && message !== "Chat request failed" ? message : "";
-      const alertText = deriveChatErrorMessage(failedStatus, detail, failedStatus ? undefined : err);
-      setChatAlert((prev) => prev || alertText);
+      console.error("Stream error:", err);
+      const alertText = deriveChatErrorMessage(null, err instanceof Error ? err.message : "Request failed.", err);
+      setChatAlert(alertText);
+      setMessages((prev) => {
+        if (prev.length > 0 && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) {
+           return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } finally {
       setChatLoading(false);
     }
