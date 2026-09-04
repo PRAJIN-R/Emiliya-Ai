@@ -2211,6 +2211,9 @@ export default function Page() {
     };
     window.speechSynthesis.speak(utterance);
   };
+
+  useEffect(() => {
+    const initialIdx = Math.floor(Math.random() * HERO_QUOTES.length);
     setHeroQuote(HERO_QUOTES[initialIdx]);
   }, []);
 
