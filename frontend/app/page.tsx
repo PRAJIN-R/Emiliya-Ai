@@ -2450,48 +2450,73 @@ export default function Page() {
 
       const decoder = new TextDecoder();
       let done = false;
+      let streamBuffer = "";
 
       // Add placeholder
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        if (doneReading) {
+          done = true;
+          break;
+        }
+
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split("\n");
+        streamBuffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === "meta") {
-                provider = data.provider;
-                route = data.route;
-              } else if (data.type === "meta2") {
-                sourceName = data.source_name;
-                freshness = data.freshness;
-              } else if (data.type === "token") {
-                assistantReply += data.value;
-                setMessages((prev) => {
-                  const last = prev[prev.length - 1];
-                  if (last && last.role === "assistant") {
-                    return [
-                      ...prev.slice(0, -1),
-                      { ...last, content: assistantReply, provider, route, sourceName, freshness }
-                    ];
-                  }
-                  return prev;
-                });
-              } else if (data.type === "done") {
-                done = true;
-              }
-            } catch (e) {}
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          const dataStr = trimmed.slice(6);
+          if (dataStr === "[DONE]") {
+            done = true;
+            break;
           }
+
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.type === "meta") {
+              provider = data.provider;
+              route = data.route;
+            } else if (data.type === "meta2") {
+              sourceName = data.source_name;
+              freshness = data.freshness;
+            } else if (data.type === "token") {
+              assistantReply += data.value;
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    content: assistantReply,
+                    provider,
+                    route,
+                    sourceName,
+                    freshness
+                  };
+                }
+                return updated;
+              });
+            } else if (data.type === "done") {
+              done = true;
+              break;
+            }
+          } catch (e) {}
         }
       }
 
-      upsertThread(buildTitleFromText(lastUserText), [...currentMessages, { role: "assistant", content: assistantReply, provider, route, sourceName, freshness }]);
+      upsertThread(buildTitleFromText(lastUserText), [...currentMessages, {
+        role: "assistant",
+        content: assistantReply,
+        provider,
+        route,
+        sourceName,
+        freshness
+      }]);
     } catch (err) {
       setChatAlert(err instanceof Error ? err.message : "Request failed.");
       setMessages((prev) => (prev.length > 0 && prev[prev.length - 1].role === "assistant" && !prev[prev.length - 1].content) ? prev.slice(0, -1) : prev);
@@ -2578,52 +2603,84 @@ export default function Page() {
 
       const decoder = new TextDecoder();
       let done = false;
+      let streamBuffer = "";
 
       // Add a placeholder assistant message that we will update
       setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        if (doneReading) {
+          done = true;
+          break;
+        }
+
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split("\n");
+        streamBuffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === "[DONE]") break;
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === "meta") {
-                provider = data.provider;
-                route = data.route;
-              } else if (data.type === "meta2") {
-                sourceName = data.source_name;
-                freshness = data.freshness;
-              } else if (data.type === "token") {
-                assistantReply += data.value;
-                setMessages((prev) => {
-                  const last = prev[prev.length - 1];
-                  if (last && last.role === "assistant") {
-                    return [
-                      ...prev.slice(0, -1),
-                      { ...last, content: assistantReply, provider, route, sourceName, freshness }
-                    ];
-                  }
-                  return prev;
-                });
-              } else if (data.type === "done") {
-                done = true;
-              }
-            } catch (e) {
-              // Ignore parse errors for partial chunks
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+          const dataStr = trimmed.slice(6);
+          if (dataStr === "[DONE]") {
+            done = true;
+            break;
+          }
+
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.type === "meta") {
+              provider = data.provider;
+              route = data.route;
+            } else if (data.type === "meta2") {
+              sourceName = data.source_name;
+              freshness = data.freshness;
+            } else if (data.type === "token") {
+              assistantReply += data.value;
+              setMessages((prev) => {
+                const updated = [...prev];
+                const lastIdx = updated.length - 1;
+                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
+                  updated[lastIdx] = {
+                    ...updated[lastIdx],
+                    content: assistantReply,
+                    provider,
+                    route,
+                    sourceName,
+                    freshness
+                  };
+                }
+                return updated;
+              });
+            } else if (data.type === "done") {
+              done = true;
+              break;
             }
+          } catch (e) {
+            // Partial JSON or unexpected format
           }
         }
       }
 
-      // Final upsert to DB/Local after stream finishes
-      upsertThread(buildTitleFromText(text), [...nextMessages, { role: "assistant", content: assistantReply, provider, route, sourceName, freshness }]);
+      // Final cleanup of any remaining buffer
+      if (streamBuffer.trim().startsWith("data: ")) {
+          try {
+              const data = JSON.parse(streamBuffer.trim().slice(6));
+              if (data.type === "token") assistantReply += data.value;
+          } catch(e){}
+      }
+
+      // Final upsert to DB/Local after stream finishes (if not temporary/guest)
+      upsertThread(buildTitleFromText(text), [...nextMessages, {
+        role: "assistant",
+        content: assistantReply,
+        provider,
+        route,
+        sourceName,
+        freshness
+      }]);
 
     } catch (err) {
       console.error("Stream error:", err);

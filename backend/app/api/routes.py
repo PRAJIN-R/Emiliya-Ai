@@ -92,7 +92,7 @@ def debug_chat(payload: DebugChatRequest) -> dict:
 @router.post("/chat/stream")
 async def chat_stream(payload: ChatRequest) -> StreamingResponse:
     try:
-        result = run_router(payload.messages, payload.mode)
+        result = run_router(payload.messages, payload.mode, user_id=payload.user_id, images=payload.images)
     except Exception as exc:
         fallback = local_fallback_answer(payload.messages)
         result = {

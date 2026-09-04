@@ -19,6 +19,7 @@ from app.services.providers import (
     call_plugsky,
     call_xai,
     call_you_bot,
+    generate_image,
     local_fallback_answer,
 )
 from app.services.search import build_live_answer, is_news_query, is_weather_query, search_snapshot, search_web, web_results_to_context
@@ -67,22 +68,35 @@ Be conversational and professional, matching the standard of top-tier assistants
 Always mention the source names (e.g., 'According to Garena...') to build trust."""
 
 
+IMAGE_HINTS = ("generate image", "create image", "draw", "visualize", "show me a picture of", "make a photo of", "generate an image", "create an image", "paint me", "sketch", "illustration of")
+
+SYSTEM_PROMPT_HUMAN_CENTRIC = """You are Emilia, a highly intelligent and empathetic AI assistant.
+Your goal is to provide deeply analyzed, accurate, and human-centric responses.
+When a user asks a question, don't just give a surface-level answer. Analyze the intent, consider the context, and provide a comprehensive response that is easy to understand.
+Be proactive, friendly, and professional. Match the standard of top-tier assistants like Claude or ChatGPT.
+If the response is complex, use clear sections or bullet points to improve readability.
+Always prioritize being helpful and direct."""
+
 def detect_route(messages: list[ChatMessage], mode: str) -> str:
     if mode != "auto":
         return mode
 
     text = " ".join([m.content.lower() for m in messages if m.role == "user"])
     
-    # 1. Research intent: Complex, deep questions
+    # 1. Image generation intent
+    if any(h in text for h in IMAGE_HINTS):
+        return "image_gen"
+
+    # 2. Research intent: Complex, deep questions
     research_hints = ("research", "deep dive", "comprehensive report", "detailed analysis", "technical overview", "explain in detail")
     if any(h in text for h in research_hints):
         return "research"
 
-    # 2. Search intent: Latest news, real-time facts
+    # 3. Search intent: Latest news, real-time facts
     if any(h in text for h in LATEST_HINTS) or is_weather_query(text) or is_news_query(text):
         return "search"
         
-    # 3. Coding intent: Logic, programming, math
+    # 4. Coding intent: Logic, programming, math
     if any(h in text for h in CODE_HINTS) or any(math_hint in text for math_hint in ("calculate", "solve", "formula", "integral", "derivative")):
         return "coding"
 
@@ -92,7 +106,31 @@ def detect_route(messages: list[ChatMessage], mode: str) -> str:
 def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = None, images: list[str] | None = None) -> dict:
     route = detect_route(messages, mode)
 
-    # 0. Multimodal Override: If images are present, force Gemini Vision
+    # 0. Image Generation Trigger
+    if route == "image_gen":
+        user_query = next((m.content for m in reversed(messages) if m.role == "user"), "")
+        try:
+            # Clean up query to get the prompt
+            prompt = user_query
+            for h in IMAGE_HINTS:
+                prompt = prompt.replace(h, "")
+            prompt = prompt.strip(" ,.!")
+            if not prompt:
+                prompt = user_query
+            
+            img_result = generate_image(prompt)
+            return {
+                "route": "image_gen",
+                "answer": f"I've generated an image for you: \"{prompt}\"\n\n![Generated Image]({img_result['url']})",
+                "provider": img_result["provider"],
+                "fallback_used": False,
+                "provider_errors": []
+            }
+        except Exception as e:
+            print(f"Auto image gen failed: {e}")
+            # Continue to chat if image gen fails
+
+    # 0.5. Multimodal Override: If images are present, force Gemini Vision
     if images:
         return {"route": "vision", **_run_candidates([("gemini", lambda: call_gemini(messages, settings.gemini_model, images))], messages)}
 
@@ -106,6 +144,9 @@ def run_router(messages: list[ChatMessage], mode: str, user_id: str | None = Non
                 ChatMessage(role="system", content=f"User's past context/memory:\n{long_term_memory}"),
                 *messages
             ]
+
+    # Inject human-centric system prompt
+    messages = [ChatMessage(role="system", content=SYSTEM_PROMPT_HUMAN_CENTRIC)] + messages
 
     result = {}
     candidates = []
