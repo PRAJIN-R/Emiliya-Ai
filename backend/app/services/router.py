@@ -7,6 +7,7 @@ from app.services.providers import (
     call_ai_horde,
     call_bazaarlink,
     call_cerebras,
+    call_claude,
     call_cohere,
     call_edyx,
     call_eight_scale,
@@ -71,10 +72,20 @@ def detect_route(messages: list[ChatMessage], mode: str) -> str:
         return mode
 
     text = " ".join([m.content.lower() for m in messages if m.role == "user"])
-    if any(h in text for h in LATEST_HINTS) or is_weather_query(text):
+    
+    # 1. Research intent: Complex, deep questions
+    research_hints = ("research", "deep dive", "comprehensive report", "detailed analysis", "technical overview", "explain in detail")
+    if any(h in text for h in research_hints):
+        return "research"
+
+    # 2. Search intent: Latest news, real-time facts
+    if any(h in text for h in LATEST_HINTS) or is_weather_query(text) or is_news_query(text):
         return "search"
-    if any(h in text for h in CODE_HINTS):
+        
+    # 3. Coding intent: Logic, programming, math
+    if any(h in text for h in CODE_HINTS) or any(math_hint in text for math_hint in ("calculate", "solve", "formula", "integral", "derivative")):
         return "coding"
+
     return "chat"
 
 
@@ -116,6 +127,8 @@ Be extremely thorough and cite your sources by name."""),
                 ),
             ]
             candidates = []
+            if settings.anthropic_api_key:
+                candidates.append(("claude", lambda: call_claude(summary_messages, settings.anthropic_model)))
             if settings.gemini_api_key:
                 candidates.append(("gemini", lambda: call_gemini(summary_messages, settings.gemini_model)))
             if settings.groq_api_key:
@@ -135,6 +148,8 @@ Be extremely thorough and cite your sources by name."""),
 
     if not result and route == "coding":
         candidates = []
+        if settings.anthropic_api_key:
+            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.cerebras_api_key:
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
@@ -171,6 +186,8 @@ Be extremely thorough and cite your sources by name."""),
                 ),
             ]
             candidates = []
+            if settings.anthropic_api_key:
+                candidates.append(("claude", lambda: call_claude(summary_messages, settings.anthropic_model)))
             if settings.you_api_key:
                 candidates.append(("you_bot", lambda: call_you_bot(summary_messages)))
             if settings.cerebras_api_key:
@@ -219,6 +236,8 @@ Be extremely thorough and cite your sources by name."""),
 
     if route == "chat" or not result:
         candidates = []
+        if settings.anthropic_api_key:
+            candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.you_api_key:
             candidates.append(("you_bot", lambda: call_you_bot(messages)))
         if settings.eight_scale_api_key:
@@ -260,6 +279,8 @@ Be extremely thorough and cite your sources by name."""),
 
 def fallback_router(messages: list[ChatMessage]) -> dict:
     candidates = []
+    if settings.anthropic_api_key:
+        candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
     if settings.you_api_key:
         candidates.append(("you_bot", lambda: call_you_bot(messages)))
     if settings.cerebras_api_key:
@@ -290,6 +311,7 @@ def provider_snapshot() -> dict:
     return {
         "keys_loaded": {
             "gemini": bool(settings.gemini_api_key),
+            "claude": bool(settings.anthropic_api_key),
             "xai": bool(settings.xai_api_key),
             "mistral": bool(settings.mistral_api_key),
             "groq": bool(settings.groq_api_key),
@@ -320,12 +342,13 @@ def provider_snapshot() -> dict:
             "langchain": bool(settings.langchain_api_key),
         },
         "provider_priority": [
-            "You.com (Premium Search)",
-            "Cerebras (Fast)",
+            "Cerebras (Ultra-Fast)",
             "Groq (Fast)",
-            "Edyx / Plugsky",
-            "Gemini / Mistral",
+            "Anthropic Claude 3.5 (Premium Logic)",
+            "You.com (Premium Search)",
+            "Gemini (Multimodal)",
             "xAI / Grok",
+            "Mistral",
             "Cohere",
             "AI Horde",
             "OpenRouter",

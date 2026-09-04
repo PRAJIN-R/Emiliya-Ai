@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     openrouter_api_key: str = ""
     openai_api_key: str = ""
+    anthropic_api_key: str = ""
     tavily_api_key: str = ""
     news_api_key: str = ""
     world_news_api_key: str = ""
@@ -59,6 +60,7 @@ class Settings(BaseSettings):
     cerebras_model: str = "llama3.1-70b"
     cohere_model: str = "command-r-plus"
     openrouter_model: str = "mistralai/mistral-small-3.1-24b-instruct"
+    anthropic_model: str = "claude-3-5-sonnet-20241022"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

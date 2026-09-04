@@ -27,11 +27,18 @@ interface SpeechRecognitionEvent extends Event {
 }
 
 // Icons
-function IconVideo({ className }: { className?: string }) {
+function IconBrain({ className }: { className?: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M9.5 2C7.84315 2 6.5 3.34315 6.5 5C6.5 5.17071 6.51418 5.33811 6.54141 5.50085C5.08383 5.92211 4 7.28827 4 8.9C4 9.07071 4.01418 9.23811 4.04141 9.40085C2.84651 10.1557 2 11.4828 2 13C2 15.2091 3.79086 17 6 17C6.17071 17 6.33811 16.9858 6.50085 16.9586C7.25569 18.1535 8.58282 19 10.1 19C11.5172 19 12.7681 18.2613 13.5 17.1508C14.2319 18.2613 15.4828 19 16.9 19C18.4172 19 19.7443 18.1535 20.4991 16.9586C20.6619 16.9858 20.8293 17 21 17C23.2091 17 25 15.2091 25 13C25 11.4828 24.1535 10.1557 22.9586 9.40085C22.9858 9.23811 23 9.07071 23 8.9C23 7.28827 21.9162 5.92211 20.4586 5.50085C20.4858 5.33811 20.5 5.17071 20.5 5C20.5 3.34315 19.1569 2 17.5 2C15.8431 2 14.5 3.34315 14.5 5C14.5 5.17071 14.5142 5.33811 14.5414 5.50085C13.8105 5.17646 12.9856 5 12.1 5C11.2144 5 10.3895 5.17646 9.65859 5.50085C9.68582 5.33811 9.7 5.17071 9.7 5C9.7 3.34315 8.35685 2 6.7 2H9.5ZM12.1 7C14.2539 7 16 8.74609 16 10.9V11.1C16 11.1276 16.0224 11.15 16.05 11.15H16.25C17.7964 11.15 19.05 12.3964 19.05 13.9429C19.05 14.1136 19.0348 14.2807 19.0055 14.443C20.4485 14.8631 21.55 16.2166 21.55 17.8286C21.55 19.8837 19.8837 21.55 17.8286 21.55C16.3475 21.55 15.0688 20.6865 14.4371 19.4296C13.8055 20.6865 12.5268 21.55 11.0457 21.55C8.99063 21.55 7.32432 19.8837 7.32432 17.8286C7.32432 16.2166 8.42582 14.8631 9.86877 14.443C9.83951 14.2807 9.82432 14.1136 9.82432 13.9429C9.82432 12.3964 11.0779 11.15 12.6243 11.15H12.8243C12.8519 11.15 12.8743 11.1276 12.8743 11.1V10.9C12.8743 8.74609 11.1282 7 8.97432 7L12.1 7Z" fill="currentColor"/>
+    </svg>
+  );
+}
+
+function IconVoiceWave({ className }: { className?: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path d="M23 7l-7 5 7 5V7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 3v18M8 8v8M4 11v2M16 8v8M20 11v2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -1517,6 +1524,10 @@ function InputBar({
   onStopAudio?: () => void;
   isSpeaking?: boolean;
   isTemporary?: boolean;
+  voiceAssistantActive?: boolean;
+  setVoiceAssistantActive?: (v: boolean) => void;
+  thinkModeActive?: boolean;
+  setThinkModeActive?: (v: boolean) => void;
 }) {
   const toolsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1733,9 +1744,35 @@ function InputBar({
                 className="flex-1 bg-transparent py-2 text-[15px] text-[#ececec] outline-none placeholder:text-white/30"
               />
               <div className="flex items-center gap-1.5 shrink-0 pr-1">
-                 <button onClick={startListening} className="p-2 text-white/50 hover:text-white transition-colors">
+                 <button
+                   onClick={() => setThinkModeActive?.(!thinkModeActive)}
+                   className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all ${thinkModeActive ? 'bg-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+                   title="Thinking mode"
+                 >
+                   <IconBrain className={thinkModeActive ? "animate-pulse" : ""} />
+                   <span className="text-[13px] font-bold">Think</span>
+                 </button>
+
+                 <button onClick={startListening} className="p-2 text-white/50 hover:text-white transition-colors" title="Dictation">
                   <IconMic />
                  </button>
+
+                 <div className="relative group/voice">
+                   <button
+                     onClick={() => setVoiceAssistantActive?.(true)}
+                     className="p-2 text-white/50 hover:text-white transition-colors"
+                   >
+                     <IconVoiceWave />
+                   </button>
+                   {/* Blue ChatGPT-style Tooltip */}
+                   <div className="absolute bottom-full right-0 mb-3 w-[240px] rounded-2xl bg-[#3b82f6] p-3 text-white shadow-2xl opacity-0 group-hover/voice:opacity-100 pointer-events-none transition-all duration-300 translate-y-2 group-hover/voice:translate-y-0 z-[100]">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-[13.5px] font-medium leading-snug">Talk out loud with Emilia using Voice</p>
+                        <button className="mt-0.5 shrink-0 opacity-60 hover:opacity-100"><IconX className="w-3 h-3" /></button>
+                      </div>
+                      <div className="absolute top-full right-4 w-3 h-3 bg-[#3b82f6] rotate-45 -translate-y-1.5" />
+                   </div>
+                 </div>
 
                  {hasText || imagePreviews.length > 0 ? (
                   <button
@@ -1769,6 +1806,83 @@ function InputBar({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function VoiceAssistantOverlay({
+  isOpen,
+  onClose,
+  status,
+  onToggleMic
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  status: "ready" | "listening" | "thinking" | "speaking" | "error";
+  onToggleMic: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-between bg-black text-white p-8 animate-[fadeIn_.3s_ease-out]">
+      {/* Header */}
+      <div className="flex w-full items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-[14px] font-bold tracking-tight text-white/80">Emilia Voice</span>
+        </div>
+        <button className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
+          <IconSettings className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Center Orb Area */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-12 w-full max-w-md">
+        <h2 className="text-[24px] font-medium text-white/90 animate-[fadeIn_.5s_ease-out] text-center">
+          {status === "ready" && "Ready when you are."}
+          {status === "listening" && "I'm listening..."}
+          {status === "thinking" && "Thinking..."}
+          {status === "speaking" && "Emilia is speaking..."}
+          {status === "error" && "Poor connection"}
+        </h2>
+
+        {/* The Orb */}
+        <div className="relative group">
+          <div className={`h-[180px] w-[180px] rounded-full transition-all duration-700 bg-gradient-to-tr from-blue-600 via-purple-500 to-indigo-400 orb-glow ${status === 'listening' ? 'scale-110' : ''} ${status === 'thinking' ? 'animate-pulse' : ''} ${status === 'error' ? 'grayscale opacity-50' : ''}`}>
+             <div className="absolute inset-0 bg-white/20 rounded-full blur-[20px]" />
+          </div>
+          {status === 'speaking' && (
+            <div className="absolute inset-[-20px] rounded-full border border-blue-500/20 animate-ping" />
+          )}
+        </div>
+
+        {status === "error" && (
+           <p className="text-[14px] text-white/40 font-medium">Try moving to a stronger signal area</p>
+        )}
+      </div>
+
+      {/* Footer Controls */}
+      <div className="w-full flex items-center justify-center gap-4">
+        <div className="flex h-14 w-full max-w-[520px] items-center gap-3 rounded-full bg-[#171717] border border-white/10 px-4 shadow-xl">
+           <button className="p-2 text-white/40 hover:text-white transition-colors"><IconPlus /></button>
+           <input
+             placeholder="Type"
+             className="flex-1 bg-transparent border-none outline-none text-[15px] placeholder:text-white/30"
+           />
+           <button className="flex items-center gap-2 rounded-xl px-2 py-1 text-white/40 hover:text-white transition-colors group/think">
+              <IconBrain className="w-4 h-4 group-hover/think:text-white transition-colors" />
+              <span className="text-[13px] font-bold group-hover/think:text-white transition-colors">Think</span>
+           </button>
+           <button onClick={onToggleMic} className="p-2 text-white/40 hover:text-white transition-colors">
+              <IconMic />
+           </button>
+           <button
+             onClick={onClose}
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black hover:bg-[#ececec] transition-colors shadow-lg"
+           >
+              <IconX className="w-4 h-4" />
+           </button>
+        </div>
       </div>
     </div>
   );
@@ -1859,6 +1973,9 @@ export default function Page() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeSidebarTab, setActiveSidebarTab] = useState<string>("Search chats");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceAssistantActive, setVoiceAssistantActive] = useState(false);
+  const [thinkModeActive, setThinkModeActive] = useState(false);
+  const [voiceAssistantStatus, setVoiceAssistantStatus] = useState<"ready" | "listening" | "thinking" | "speaking" | "error">("ready");
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [externalLinkModalOpen, setExternalLinkModalOpen] = useState(false);
@@ -1983,7 +2100,101 @@ export default function Page() {
   };
 
   useEffect(() => {
-    const initialIdx = Math.floor(Math.random() * HERO_QUOTES.length);
+    if (voiceAssistantActive) {
+      setVoiceAssistantStatus("ready");
+      // Give a small delay before starting to listen
+      const timer = setTimeout(() => {
+        setVoiceAssistantStatus("listening");
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setVoiceAssistantStatus("ready");
+      stopListening();
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+  }, [voiceAssistantActive]);
+
+  useEffect(() => {
+    if (voiceAssistantActive && voiceAssistantStatus === "listening") {
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Recognition) {
+        setVoiceAssistantStatus("error");
+        return;
+      }
+      const rec = new Recognition();
+      rec.continuous = false; // We want one-shot for the loop
+      rec.interimResults = false;
+      rec.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        if (text.trim()) {
+          setVoiceAssistantStatus("thinking");
+          void sendVoiceMessage(text);
+        }
+      };
+      rec.onerror = () => {
+        if (voiceAssistantActive) setVoiceAssistantStatus("error");
+      };
+      rec.onend = () => {
+        if (voiceAssistantActive && voiceAssistantStatus === "listening") {
+          // If it ended without a result, just restart or stay ready
+          // For now, keep it simple
+        }
+      };
+      rec.start();
+      recognitionRef.current = rec;
+    }
+  }, [voiceAssistantActive, voiceAssistantStatus]);
+
+  const sendVoiceMessage = async (text: string) => {
+    const outgoing: UiMessage = { role: "user", content: text };
+    const nextMessages = [...messages, outgoing];
+    setMessages(nextMessages);
+
+    try {
+      const apiBase = apiBaseUrl();
+      const res = await fetch(`${apiBase}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          mode: thinkModeActive ? "coding" : "auto", // Use coding mode as a proxy for "Think longer"
+          user_id: authUser?.id
+        }),
+      });
+
+      const data = (await res.json()) as ChatResponse;
+      if (res.ok && data.answer) {
+        const assistantMsg: UiMessage = {
+          role: "assistant",
+          content: data.answer,
+          provider: data.provider,
+          route: data.route
+        };
+        setMessages([...nextMessages, assistantMsg]);
+        setVoiceAssistantStatus("speaking");
+        speakVoiceAssistant(data.answer);
+      } else {
+        setVoiceAssistantStatus("error");
+      }
+    } catch (err) {
+      setVoiceAssistantStatus("error");
+    }
+  };
+
+  const speakVoiceAssistant = (text: string) => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => {
+      if (voiceAssistantActive) setVoiceAssistantStatus("listening");
+    };
+    utterance.onerror = () => {
+      if (voiceAssistantActive) setVoiceAssistantStatus("error");
+    };
+    window.speechSynthesis.speak(utterance);
+  };
     setHeroQuote(HERO_QUOTES[initialIdx]);
   }, []);
 
@@ -3183,6 +3394,10 @@ export default function Page() {
                       onStopAudio={handleStopAudio}
                       isSpeaking={isSpeaking}
                       isTemporary={temporaryChat}
+                      voiceAssistantActive={voiceAssistantActive}
+                      setVoiceAssistantActive={setVoiceAssistantActive}
+                      thinkModeActive={thinkModeActive}
+                      setThinkModeActive={setThinkModeActive}
                     />
                   </div>
                   {temporaryChat && (
@@ -3370,6 +3585,10 @@ export default function Page() {
                   onStopAudio={handleStopAudio}
                   isSpeaking={isSpeaking}
                   isTemporary={temporaryChat}
+                  voiceAssistantActive={voiceAssistantActive}
+                  setVoiceAssistantActive={setVoiceAssistantActive}
+                  thinkModeActive={thinkModeActive}
+                  setThinkModeActive={setThinkModeActive}
                 />
                 <p className="mt-4 text-center text-[12.5px] text-white/25 leading-relaxed">
                   Emilia can make mistakes. Check important info. By using it, you agree to our <span className="underline cursor-pointer hover:text-white/40">Terms</span> & <span className="underline cursor-pointer hover:text-white/40">Privacy Policy</span>.
@@ -3892,34 +4111,41 @@ export default function Page() {
       )}
 
       {imageViewerOpen && activeViewerImage && (
-        <div className="fixed inset-0 z-[100]">
+        <div className="fixed inset-0 z-[250]">
           <button
-            className="absolute inset-0 h-full w-full bg-black/75 backdrop-blur-[2px]"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setImageViewerOpen(false);
-            }}
+            className="absolute inset-0 h-full w-full bg-black/90 backdrop-blur-md"
+            onClick={() => setImageViewerOpen(false)}
             aria-label="Close image preview backdrop"
           />
-          <div className="relative z-[101] flex h-full w-full items-center justify-center p-6">
+          <div className="relative z-[251] flex h-full w-full items-center justify-center p-4 md:p-12">
             <img
               src={activeViewerImage}
-              alt="Image preview"
-              className="max-h-[90vh] max-w-[90vw] rounded-md object-contain shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
+              alt="Full size preview"
+              className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl animate-[slidePop_.2s_ease-out]"
             />
+            <button
+              onClick={() => setImageViewerOpen(false)}
+              className="absolute right-6 top-6 z-[252] flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md transition hover:bg-white/20"
+            >
+              <IconX />
+            </button>
           </div>
-          <button
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setImageViewerOpen(false);
-            }}
-            className="absolute right-6 top-6 z-[102] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white transition hover:bg-black/65"
-            aria-label="Close image preview"
-          >
-            <IconX />
-          </button>
         </div>
+      )}
+
+      {voiceAssistantActive && (
+        <VoiceAssistantOverlay
+          isOpen={voiceAssistantActive}
+          onClose={() => setVoiceAssistantActive(false)}
+          status={voiceAssistantStatus}
+          onToggleMic={() => {
+             if (voiceAssistantStatus === 'listening') {
+               setVoiceAssistantStatus('ready');
+             } else {
+               setVoiceAssistantStatus('listening');
+             }
+          }}
+        />
       )}
       {upgradeModalOpen && (
         <UpgradeModal isOpen={upgradeModalOpen} onClose={() => setUpgradeModalOpen(false)} />

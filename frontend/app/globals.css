@@ -102,6 +102,21 @@ select {
   animation: voicePulse 1.8s ease-in-out infinite;
 }
 
+.orb-glow {
+  animation: orbGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes orbGlow {
+  0% {
+    filter: blur(2px) brightness(1);
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.4), 0 0 80px rgba(168, 85, 247, 0.2);
+  }
+  100% {
+    filter: blur(4px) brightness(1.2);
+    box-shadow: 0 0 60px rgba(59, 130, 246, 0.6), 0 0 120px rgba(168, 85, 247, 0.4);
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
