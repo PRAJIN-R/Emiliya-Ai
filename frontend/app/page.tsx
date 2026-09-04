@@ -1494,7 +1494,11 @@ function InputBar({
   onReadAloud,
   onStopAudio,
   isSpeaking,
-  isTemporary
+  isTemporary,
+  voiceAssistantActive,
+  setVoiceAssistantActive,
+  thinkModeActive,
+  setThinkModeActive
 }: {
   input: string;
   setInput: (v: string) => void;
