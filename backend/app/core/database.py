@@ -13,7 +13,12 @@ async def connect_to_mongo():
         return
     
     try:
-        db.client = AsyncIOMotorClient(settings.mongodb_uri)
+        # Added tlsAllowInvalidCertificates=True to handle common handshake errors
+        db.client = AsyncIOMotorClient(
+            settings.mongodb_uri,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=5000
+        )
         db.db = db.client[settings.mongodb_db_name]
         # Verify connection
         await db.client.admin.command('ping')

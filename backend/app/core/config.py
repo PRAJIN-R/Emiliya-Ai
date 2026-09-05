@@ -58,12 +58,12 @@ class Settings(BaseSettings):
     email_sender_name: str = "Emilia"
 
     gemini_model: str = "gemini-1.5-flash"
-    xai_model: str = "grok-beta"
-    mistral_model: str = "mistral-large-latest"
-    groq_model: str = "llama-3.3-70b-versatile"
+    xai_model: str = "grok-2-1212"
+    mistral_model: str = "mistral-tiny"
+    groq_model: str = "llama3-70b-8192"
     cerebras_model: str = "llama3.1-70b"
-    cohere_model: str = "command-r-plus"
-    openrouter_model: str = "mistralai/mistral-small-3.1-24b-instruct"
+    cohere_model: str = "command-r"
+    openrouter_model: str = "google/gemini-flash-1.5"
     anthropic_model: str = "claude-3-5-sonnet-20241022"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

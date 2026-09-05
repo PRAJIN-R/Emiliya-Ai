@@ -54,8 +54,12 @@ def call_gemini(messages: list[ChatMessage], model: str, images: list[str] | Non
     if not settings.gemini_api_key:
         raise RuntimeError("Missing GEMINI_API_KEY")
     
+    # Ensure model has correct prefix and version
     target_model = "gemini-1.5-flash" if images else model
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent"
+    if not target_model.startswith("models/"):
+        target_model = f"models/{target_model}"
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/{target_model}:generateContent"
     
     system_text = ""
     contents = []
@@ -118,7 +122,12 @@ def call_claude(messages: list[ChatMessage], model: str) -> ProviderResult:
     url = "https://api.anthropic.com/v1/messages"
     
     # Claude doesn't like 'system' role in messages list, it wants it as a top-level parameter
-    system_message = next((m.content for m in messages if m.role == "system"), "")
+    system_message = ""
+    for m in messages:
+        if m.role == "system":
+            system_message = m.content
+            break
+
     filtered_messages = [
         {"role": "user" if m.role == "user" else "assistant", "content": m.content}
         for m in messages if m.role in ("user", "assistant")
@@ -229,7 +238,7 @@ def call_edyx(messages: list[ChatMessage]) -> ProviderResult:
     if not settings.edyx_api_key:
         raise RuntimeError("Missing EDYX_API_KEY")
     url = "https://api.edyx.ai/v1/chat/completions"
-    payload = {"model": "llama-3.1-70b", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    payload = {"model": "gpt-4o", "messages": [{"role": m.role, "content": m.content} for m in messages]}
     headers = {"Authorization": f"Bearer {settings.edyx_api_key}", "Content-Type": "application/json"}
     with httpx.Client(timeout=45.0) as client:
         response = client.post(url, headers=headers, json=payload)
@@ -244,7 +253,7 @@ def call_plugsky(messages: list[ChatMessage]) -> ProviderResult:
     if not settings.plugsky_api_key:
         raise RuntimeError("Missing PLUGSKY_API_KEY")
     url = "https://api.plugsky.com/v1/chat/completions"
-    payload = {"model": "llama-3.1-70b", "messages": [{"role": m.role, "content": m.content} for m in messages]}
+    payload = {"model": "plugsky-plus", "messages": [{"role": m.role, "content": m.content} for m in messages]}
     headers = {"Authorization": f"Bearer {settings.plugsky_api_key}", "Content-Type": "application/json"}
     with httpx.Client(timeout=45.0) as client:
         response = client.post(url, headers=headers, json=payload)
