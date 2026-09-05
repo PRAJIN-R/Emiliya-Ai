@@ -356,33 +356,39 @@ def call_you_bot(messages: list[ChatMessage]) -> ProviderResult:
 
 def call_pollinations_text(messages: list[ChatMessage]) -> ProviderResult:
     """Highly reliable free fallback with no API key required."""
-    url = "https://text.pollinations.ai/"
+    # Using the most stable simple prompt endpoint
+    last_msg = messages[-1].content if messages else "Hello"
+    url = f"https://text.pollinations.ai/{quote_plus(last_msg)}"
     
-    # Pollinations text API takes a simple prompt or a JSON with messages
-    # We'll try the prompt-based approach for maximum simplicity
-    prompt = "\n".join([f"{m.role}: {m.content}" for m in messages])
-    
-    payload = {
-        "messages": [
-            {"role": m.role if m.role != "assistant" else "assistant", "content": m.content}
-            for m in messages
-        ],
-        "model": "openai" # Pollinations maps this to a good default
-    }
-    
-    with httpx.Client(timeout=30.0) as client:
-        # Using the newer messages endpoint if available, else fallback to GET
-        try:
-            response = client.post(url, json=payload)
+    # We can also pass full context as a system-like prefix for the simple API
+    context = ""
+    if len(messages) > 1:
+        context = "Context of previous messages:\n"
+        for m in messages[:-1]:
+            context += f"{m.role}: {m.content}\n"
+        context += "\nNow answer the following:\n"
+        url = f"https://text.pollinations.ai/{quote_plus(context + last_msg)}"
+
+    try:
+        with httpx.Client(timeout=20.0, follow_redirects=True) as client:
+            response = client.get(url)
             if response.status_code == 200:
                 return ProviderResult(answer=response.text.strip(), provider="pollinations")
-        except Exception:
-            pass
             
-        # Last ditch: GET with encoded prompt
-        response = client.get(f"{url}{quote_plus(messages[-1].content)}")
-        response.raise_for_status()
-        return ProviderResult(answer=response.text.strip(), provider="pollinations")
+            # Fallback to POST if GET fails
+            payload = {
+                "messages": [{"role": m.role, "content": m.content} for m in messages],
+                "model": "openai",
+                "json": False
+            }
+            res = client.post("https://text.pollinations.ai/", json=payload)
+            if res.status_code == 200:
+                return ProviderResult(answer=res.text.strip(), provider="pollinations")
+                
+    except Exception as e:
+        print(f"Pollinations text failed: {e}")
+        
+    raise RuntimeError("Pollinations fallback exhausted")
 
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:
     if settings.journey_api_key:

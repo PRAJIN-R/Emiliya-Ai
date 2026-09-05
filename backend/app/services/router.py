@@ -177,6 +177,10 @@ Be extremely thorough and cite your sources by name."""),
                 candidates.append(("groq", lambda: call_groq(summary_messages, settings.groq_model)))
             if settings.mistral_api_key:
                 candidates.append(("mistral", lambda: call_mistral(summary_messages, settings.mistral_model)))
+            
+            # Universal Fallback
+            candidates.append(("pollinations", lambda: call_pollinations_text(summary_messages)))
+
             summary_result = _run_candidates(candidates, summary_messages)
             if summary_result and summary_result.get("answer"):
                 result = {
@@ -208,6 +212,10 @@ Be extremely thorough and cite your sources by name."""),
             candidates.append(("mistral", lambda: call_mistral(messages, settings.mistral_model)))
         if settings.openrouter_api_key:
             candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
+        
+        # Universal Fallback
+        candidates.append(("pollinations", lambda: call_pollinations_text(messages)))
+
         result = {"route": route, **_run_candidates(candidates, messages)}
 
     elif route == "search":
@@ -244,6 +252,10 @@ Be extremely thorough and cite your sources by name."""),
                 candidates.append(("mistral", lambda: call_mistral(summary_messages, settings.mistral_model)))
             if settings.openrouter_api_key:
                 candidates.append(("openrouter", lambda: call_openrouter(summary_messages, settings.openrouter_model)))
+            
+            # Universal Fallback
+            candidates.append(("pollinations", lambda: call_pollinations_text(summary_messages)))
+
             summary_result = _run_candidates(candidates, summary_messages) if candidates else None
             if summary_result and summary_result.get("answer") and "cannot verify" not in summary_result["answer"].lower():
                 result = {
@@ -282,10 +294,6 @@ Be extremely thorough and cite your sources by name."""),
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
             candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
-        
-        # Free/Instant Fallback before premium keys if they fail
-        candidates.append(("pollinations", lambda: call_pollinations_text(messages)))
-
         if settings.anthropic_api_key:
             candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.you_api_key:
@@ -310,6 +318,10 @@ Be extremely thorough and cite your sources by name."""),
             candidates.append(("ai_horde", lambda: call_ai_horde(messages)))
         if settings.openrouter_api_key:
             candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
+        
+        # Free/Instant Universal Fallback
+        candidates.append(("pollinations", lambda: call_pollinations_text(messages)))
+
         result = {"route": route, **_run_candidates(candidates, messages)}
 
     # Auto-store the exchange in long-term memory if user_id present
@@ -347,6 +359,10 @@ def fallback_router(messages: list[ChatMessage]) -> dict:
         candidates.append(("ai_horde", lambda: call_ai_horde(messages)))
     if settings.openrouter_api_key:
         candidates.append(("openrouter", lambda: call_openrouter(messages, settings.openrouter_model)))
+        
+    # Free Universal Fallback
+    candidates.append(("pollinations", lambda: call_pollinations_text(messages)))
+
     return {"route": "fallback", **_run_candidates(candidates, messages)}
 
 
