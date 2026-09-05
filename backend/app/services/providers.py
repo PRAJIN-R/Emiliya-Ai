@@ -177,7 +177,7 @@ def call_groq(messages: list[ChatMessage], model: str) -> ProviderResult:
     valid_msgs = [{"role": m.role, "content": m.content} for m in messages if m.content.strip()]
     payload = {"model": model, "messages": valid_msgs, "temperature": 0.4}
     headers = {"Authorization": f"Bearer {settings.groq_api_key}", "Content-Type": "application/json"}
-    with httpx.Client(timeout=30.0) as client:
+    with httpx.Client(timeout=15.0) as client:
         response = client.post(url, headers=headers, json=payload)
         if response.status_code != 200:
             raise RuntimeError(f"Groq Error {response.status_code}: {response.text}")
@@ -306,7 +306,7 @@ def call_cerebras(messages: list[ChatMessage], model: str) -> ProviderResult:
     url = "https://api.cerebras.ai/v1/chat/completions"
     payload = {"model": model, "messages": [{"role": m.role, "content": m.content} for m in messages], "temperature": 0.3}
     headers = {"Authorization": f"Bearer {settings.cerebras_api_key}", "Content-Type": "application/json"}
-    with httpx.Client(timeout=20.0) as client:
+    with httpx.Client(timeout=10.0) as client:
         response = client.post(url, headers=headers, json=payload)
         if response.status_code != 200:
             raise RuntimeError(f"Cerebras Error {response.status_code}: {response.text}")
@@ -353,6 +353,36 @@ def call_you_bot(messages: list[ChatMessage]) -> ProviderResult:
     answer = _extract_text_choice(data)
     return ProviderResult(answer=answer, provider="you_bot")
 
+
+def call_pollinations_text(messages: list[ChatMessage]) -> ProviderResult:
+    """Highly reliable free fallback with no API key required."""
+    url = "https://text.pollinations.ai/"
+    
+    # Pollinations text API takes a simple prompt or a JSON with messages
+    # We'll try the prompt-based approach for maximum simplicity
+    prompt = "\n".join([f"{m.role}: {m.content}" for m in messages])
+    
+    payload = {
+        "messages": [
+            {"role": m.role if m.role != "assistant" else "assistant", "content": m.content}
+            for m in messages
+        ],
+        "model": "openai" # Pollinations maps this to a good default
+    }
+    
+    with httpx.Client(timeout=30.0) as client:
+        # Using the newer messages endpoint if available, else fallback to GET
+        try:
+            response = client.post(url, json=payload)
+            if response.status_code == 200:
+                return ProviderResult(answer=response.text.strip(), provider="pollinations")
+        except Exception:
+            pass
+            
+        # Last ditch: GET with encoded prompt
+        response = client.get(f"{url}{quote_plus(messages[-1].content)}")
+        response.raise_for_status()
+        return ProviderResult(answer=response.text.strip(), provider="pollinations")
 
 def generate_image(prompt: str, size: str = "1024x1024") -> dict:
     if settings.journey_api_key:

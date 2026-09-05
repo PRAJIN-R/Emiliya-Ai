@@ -17,6 +17,7 @@ from app.services.providers import (
     call_mistral,
     call_openrouter,
     call_plugsky,
+    call_pollinations_text,
     call_xai,
     call_you_bot,
     generate_image,
@@ -281,6 +282,10 @@ Be extremely thorough and cite your sources by name."""),
             candidates.append(("cerebras", lambda: call_cerebras(messages, settings.cerebras_model)))
         if settings.groq_api_key:
             candidates.append(("groq", lambda: call_groq(messages, settings.groq_model)))
+        
+        # Free/Instant Fallback before premium keys if they fail
+        candidates.append(("pollinations", lambda: call_pollinations_text(messages)))
+
         if settings.anthropic_api_key:
             candidates.append(("claude", lambda: call_claude(messages, settings.anthropic_model)))
         if settings.you_api_key:

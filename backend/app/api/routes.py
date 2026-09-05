@@ -211,7 +211,7 @@ async def save_thread(payload: dict):
         payload["user_id"],
         payload["thread_id"],
         payload["title"],
-        [ChatMessage(role=m["role"], content=m["content"]) for m in payload["messages"]],
+        payload["messages"],
         payload.get("projectId", "p_default")
     )
     return {"status": "saved"}
